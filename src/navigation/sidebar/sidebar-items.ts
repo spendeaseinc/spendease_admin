@@ -1,13 +1,4 @@
-import {
-  LayoutDashboard,
-  type LucideIcon,
-  User,
-  Users,
-  WalletCards,
-  BookCheck,
-  Bell,
-  CircleDollarSign,
-} from "lucide-react";
+import { type LucideIcon, User, Users, WalletCards, BookCheck, Bell, CircleDollarSign, LayoutGrid } from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -42,16 +33,16 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Dashboard",
         url: "/dashboard/default",
-        icon: LayoutDashboard,
+        icon: LayoutGrid,
       },
       {
         title: "Customers",
-        url: "/dashboard/crm",
+        url: "/dashboard/coming-soon",
         icon: User,
       },
       {
         title: "Transactions",
-        url: "/dashboard/finance",
+        url: "/dashboard/coming-soon",
         icon: WalletCards,
       },
       {

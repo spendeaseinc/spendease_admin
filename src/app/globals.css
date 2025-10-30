@@ -51,52 +51,69 @@ These serve as the fallback; there is no separate default.css file. */
 :root {
   --radius: 0.625rem;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  /* converted black to dark blue */
+  --card-foreground: rgba(13, 18, 28, 1);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --popover-foreground: rgba(13, 18, 28, 1);
+  /* converted black to dark blue */
+  --primary: oklch(0.205 0.04 258);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --secondary-foreground: oklch(0.205 0.04 258);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --accent-foreground: oklch(0.205 0.04 258);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.3211 0 0);
-  --chart-2: oklch(0.4495 0 0);
-  --chart-3: oklch(0.5693 0 0);
-  --chart-4: oklch(0.6830 0 0);
-  --chart-5: oklch(0.7921 0 0);
+  /* converted chart blacks to dark blues */
+  --chart-1: oklch(0.3211 0.035 260);
+  --chart-2: oklch(0.4495 0.03 258);
+  --chart-3: oklch(0.5693 0.025 256);
+  --chart-4: oklch(0.683 0.02 254);
+  --chart-5: oklch(0.7921 0.015 252);
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --sidebar-foreground: rgba(13, 18, 28, 1);
+  /* converted black to dark blue */
+  --sidebar-primary: oklch(0.205 0.04 258);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --sidebar-accent-foreground: oklch(0.205 0.04 258);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* converted black to dark blue */
+  --foreground: rgba(13, 18, 28, 1);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  /* converted black backgrounds to dark blue */
+  --background: rgba(13, 18, 28, 1);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --card: rgba(17, 25, 39, 1);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --popover: oklch(0.205 0.04 258);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  /* converted black to dark blue */
+  --primary-foreground: oklch(0.205 0.04 258);
+  /* converted black to dark blue */
+  --secondary: oklch(0.269 0.035 262);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  /* converted black to dark blue */
+  --muted: oklch(0.269 0.035 262);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  /* converted black to dark blue */
+  --accent: oklch(0.269 0.035 262);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
@@ -107,13 +124,15 @@ These serve as the fallback; there is no separate default.css file. */
   --chart-3: oklch(0.7572 0 0);
   --chart-4: oklch(0.6534 0 0);
   --chart-5: oklch(0.5452 0 0);
-  --sidebar: oklch(0.205 0 0);
+  /* converted black to dark blue */
+  --sidebar: rgba(13, 18, 28, 1);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  /* converted black to dark blue */
+  --sidebar-accent: oklch(0.269 0.035 262);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
 

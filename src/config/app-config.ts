@@ -7,7 +7,7 @@ export const APP_CONFIG = {
   version: packageJson.version,
   copyright: `© ${currentYear}, SpendEase Admin.`,
   meta: {
-    title: "SpendEase Admin Dashboard",
-    description: "SpendEase Admin Dashboard.",
+    title: "SpendEase Admin",
+    description: "SpendEase Admin.",
   },
 };
