@@ -19,11 +19,7 @@ export function ThemeSwitcher() {
   };
 
   return (
-    <Button
-      size="icon"
-      className="bg-transparent text-black hover:bg-white/90 dark:text-white"
-      onClick={handleValueChange}
-    >
+    <Button variant="ghost" size="icon" onClick={handleValueChange}>
       {themeMode === "dark" ? <Sun /> : <Moon />}
     </Button>
   );

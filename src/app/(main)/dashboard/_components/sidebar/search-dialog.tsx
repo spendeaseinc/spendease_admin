@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 
-import { LayoutDashboard, ChartBar, Gauge, ShoppingBag, GraduationCap, Forklift, Search } from "lucide-react";
+import { User, Users, WalletCards, BookCheck, Bell, CircleDollarSign, LayoutDashboard, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,11 +16,12 @@ import {
 
 const searchItems = [
   { group: "Dashboards", icon: LayoutDashboard, label: "Default" },
-  { group: "Dashboards", icon: ChartBar, label: "CRM", disabled: true },
-  { group: "Dashboards", icon: Gauge, label: "Analytics", disabled: true },
-  { group: "Dashboards", icon: ShoppingBag, label: "E-Commerce", disabled: true },
-  { group: "Dashboards", icon: GraduationCap, label: "Academy", disabled: true },
-  { group: "Dashboards", icon: Forklift, label: "Logistics", disabled: true },
+  { group: "Dashboards", icon: User, label: "Customers", disabled: true },
+  { group: "Dashboards", icon: WalletCards, label: "Transactions", disabled: true },
+  { group: "Dashboards", icon: Users, label: "Team", disabled: true },
+  { group: "Dashboards", icon: BookCheck, label: "Audit", disabled: true },
+  { group: "Dashboards", icon: CircleDollarSign, label: "Partner Balance", disabled: true },
+  { group: "Dashboards", icon: Bell, label: "Notifications", disabled: true },
   { group: "Authentication", label: "Login v1" },
   { group: "Authentication", label: "Login v2" },
   { group: "Authentication", label: "Register v1" },
@@ -44,14 +45,11 @@ export function SearchDialog() {
     <>
       <Button
         variant="link"
-        className="text-muted-foreground !px-0 font-normal hover:no-underline"
+        className="text-muted-foreground px-0! font-normal hover:no-underline"
         onClick={() => setOpen(true)}
       >
         <Search className="size-4" />
         Search
-        <kbd className="bg-muted inline-flex h-5 items-center gap-1 rounded border px-1.5 text-[10px] font-medium select-none">
-          <span className="text-xs">⌘</span>J
-        </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Search dashboards, users, and more…" />
@@ -64,7 +62,7 @@ export function SearchDialog() {
                 {searchItems
                   .filter((item) => item.group === group)
                   .map((item) => (
-                    <CommandItem className="!py-1.5" key={item.label} onSelect={() => setOpen(false)}>
+                    <CommandItem className="py-1.5!" key={item.label} onSelect={() => setOpen(false)}>
                       {item.icon && <item.icon />}
                       <span>{item.label}</span>
                     </CommandItem>
