@@ -37,27 +37,27 @@ export const sidebarItems: NavGroup[] = [
       },
       {
         title: "Customers",
-        url: "/dashboard/coming-soon",
+        url: "/dashboard/customers",
         icon: User,
       },
       {
         title: "Transactions",
-        url: "/dashboard/coming-soon",
+        url: "/dashboard/transactions",
         icon: WalletCards,
       },
       {
         title: "Teams",
-        url: "/dashboard/coming-soon",
+        url: "/dashboard/teams",
         icon: Users,
       },
       {
         title: "Audit",
-        url: "/dashboard/coming-soon",
+        url: "/dashboard/audit",
         icon: BookCheck,
       },
       {
         title: "Partner Balance",
-        url: "/dashboard/coming-soon",
+        url: "/dashboard/partner-balance",
         icon: CircleDollarSign,
       },
       {
