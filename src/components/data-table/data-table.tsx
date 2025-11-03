@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 
 import {
@@ -13,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { ColumnDef, flexRender, type Table as TanStackTable } from "@tanstack/react-table";
+import { type ColumnDef, flexRender, type Table as TanStackTable } from "@tanstack/react-table";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -55,10 +57,12 @@ function renderTableBody<TData, TValue>({
       </SortableContext>
     );
   }
-  return table.getRowModel().rows.map((row) => (
-    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+  return table.getRowModel().rows.map((row, index) => (
+    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} data-index={index}>
       {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+        <TableCell key={cell.id}>
+          {flexRender(cell.column.columnDef.cell, cell.getContext()) as React.ReactNode}
+        </TableCell>
       ))}
     </TableRow>
   ));
@@ -76,6 +80,7 @@ export function DataTable<TData, TValue>({
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (active && over && active.id !== over.id && onReorder) {
       const oldIndex = dataIds.indexOf(active.id);
       const newIndex = dataIds.indexOf(over.id);
@@ -94,7 +99,9 @@ export function DataTable<TData, TValue>({
             {headerGroup.headers.map((header) => {
               return (
                 <TableHead key={header.id} colSpan={header.colSpan}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.isPlaceholder
+                    ? null
+                    : (flexRender(header.column.columnDef.header, header.getContext()) as React.ReactNode)}
                 </TableHead>
               );
             })}

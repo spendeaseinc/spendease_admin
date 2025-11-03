@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Settings, CircleHelp } from "lucide-react";
+import { Settings } from "lucide-react";
 
 import {
   Sidebar,
@@ -27,13 +27,8 @@ const data = {
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/dashboard/settings",
       icon: Settings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: CircleHelp,
     },
   ],
 };
