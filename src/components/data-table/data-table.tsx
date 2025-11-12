@@ -1,132 +1,119 @@
-"use client";
-
-import * as React from "react";
+import { useState } from "react";
 
 import {
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  DndContext,
-  closestCenter,
-  type UniqueIdentifier,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { type ColumnDef, flexRender, type Table as TanStackTable } from "@tanstack/react-table";
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
-import { DraggableRow } from "./draggable-row";
+import { DataTablePagination } from "./data-table-pagination";
+import { DataTableToolbar } from "./data-table-toolbar";
 
 interface DataTableProps<TData, TValue> {
-  table: TanStackTable<TData>;
   columns: ColumnDef<TData, TValue>[];
-  dndEnabled?: boolean;
-  onReorder?: (newData: TData[]) => void;
-}
-
-function renderTableBody<TData, TValue>({
-  table,
-  columns,
-  dndEnabled,
-  dataIds,
-}: {
-  table: TanStackTable<TData>;
-  columns: ColumnDef<TData, TValue>[];
-  dndEnabled: boolean;
-  dataIds: UniqueIdentifier[];
-}) {
-  if (!table.getRowModel().rows.length) {
-    return (
-      <TableRow>
-        <TableCell colSpan={columns.length} className="h-24 text-center">
-          No results.
-        </TableCell>
-      </TableRow>
-    );
-  }
-  if (dndEnabled) {
-    return (
-      <SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
-        {table.getRowModel().rows.map((row) => (
-          <DraggableRow key={row.id} row={row} />
-        ))}
-      </SortableContext>
-    );
-  }
-  return table.getRowModel().rows.map((row, index) => (
-    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} data-index={index}>
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext()) as React.ReactNode}
-        </TableCell>
-      ))}
-    </TableRow>
-  ));
+  data: TData[];
+  loading?: boolean;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+  };
+  onPaginationChange?: (page: number, limit: number) => void;
+  className?: string;
 }
 
 export function DataTable<TData, TValue>({
-  table,
   columns,
-  dndEnabled = false,
-  onReorder,
+  data,
+  loading = false,
+  pagination,
+  onPaginationChange,
+  className,
 }: DataTableProps<TData, TValue>) {
-  const dataIds: UniqueIdentifier[] = table.getRowModel().rows.map((row) => Number(row.id) as UniqueIdentifier);
-  const sortableId = React.useId();
-  const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor, {}));
+  const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (active && over && active.id !== over.id && onReorder) {
-      const oldIndex = dataIds.indexOf(active.id);
-      const newIndex = dataIds.indexOf(over.id);
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const table = useReactTable({
+    data,
+    columns,
+    state: {
+      sorting,
+      columnVisibility,
+      rowSelection,
+      columnFilters,
+    },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+  });
 
-      // Call parent with new data order (parent manages state)
-      const newData = arrayMove(table.options.data, oldIndex, newIndex);
-      onReorder(newData);
-    }
-  }
-
-  const tableContent = (
-    <Table>
-      <TableHeader className="bg-muted sticky top-0 z-10">
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => {
-              return (
-                <TableHead key={header.id} colSpan={header.colSpan}>
-                  {header.isPlaceholder
-                    ? null
-                    : (flexRender(header.column.columnDef.header, header.getContext()) as React.ReactNode)}
-                </TableHead>
-              );
-            })}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody className="**:data-[slot=table-cell]:first:w-8">
-        {renderTableBody({ table, columns, dndEnabled, dataIds })}
-      </TableBody>
-    </Table>
+  return (
+    <div className={cn("space-y-4", className)}>
+      <DataTableToolbar table={table} />
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id} colSpan={header.colSpan}>
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <DataTablePagination table={table} pagination={pagination} onPaginationChange={onPaginationChange} />
+    </div>
   );
-
-  if (dndEnabled) {
-    return (
-      <DndContext
-        collisionDetection={closestCenter}
-        modifiers={[restrictToVerticalAxis]}
-        onDragEnd={handleDragEnd}
-        sensors={sensors}
-        id={sortableId}
-      >
-        {tableContent}
-      </DndContext>
-    );
-  }
-
-  return tableContent;
 }

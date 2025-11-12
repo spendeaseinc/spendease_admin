@@ -1,85 +1,96 @@
 import { Table } from "@tanstack/react-table";
-import { ChevronRight, ChevronsRight, ChevronLeft, ChevronsLeft } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+  };
+  onPaginationChange?: (page: number, limit: number) => void;
 }
 
-export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
+export function DataTablePagination<TData>({ table, pagination, onPaginationChange }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex items-center justify-between px-4">
-      <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+    <div className="flex items-center justify-between px-2">
+      <div className="text-muted-foreground flex-1 text-sm">
         {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
-      <div className="flex w-full items-center gap-8 lg:w-fit">
-        <div className="hidden items-center gap-2 lg:flex">
-          <Label htmlFor="rows-per-page" className="text-sm font-medium">
-            Rows per page
-          </Label>
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value));
-            }}
-          >
-            <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 40, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex items-center space-x-6 lg:space-x-8">
+        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          Page {pagination?.page ?? table.getState().pagination.pageIndex + 1} of{" "}
+          {pagination ? Math.ceil(pagination.total / pagination.limit) : table.getPageCount()}
         </div>
-        <div className="flex w-fit items-center justify-center text-sm font-medium">
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-        </div>
-        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+        <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => {
+              if (onPaginationChange) {
+                onPaginationChange(1, pagination?.limit ?? 10);
+              } else {
+                table.setPageIndex(0);
+              }
+            }}
+            disabled={pagination ? pagination.page === 1 : !table.getCanPreviousPage()}
           >
             <span className="sr-only">Go to first page</span>
-            <ChevronsLeft />
+            <ChevronsLeftIcon className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
-            className="size-8"
-            size="icon"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            className="h-8 w-8 p-0"
+            onClick={() => {
+              if (onPaginationChange) {
+                onPaginationChange((pagination?.page ?? 1) - 1, pagination?.limit ?? 10);
+              } else {
+                table.previousPage();
+              }
+            }}
+            disabled={pagination ? pagination.page === 1 : !table.getCanPreviousPage()}
           >
             <span className="sr-only">Go to previous page</span>
-            <ChevronLeft />
+            <ChevronLeftIcon className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
-            className="size-8"
-            size="icon"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            className="h-8 w-8 p-0"
+            onClick={() => {
+              if (onPaginationChange) {
+                onPaginationChange((pagination?.page ?? 1) + 1, pagination?.limit ?? 10);
+              } else {
+                table.nextPage();
+              }
+            }}
+            disabled={
+              pagination ? pagination.page >= Math.ceil(pagination.total / pagination.limit) : !table.getCanNextPage()
+            }
           >
             <span className="sr-only">Go to next page</span>
-            <ChevronRight />
+            <ChevronRightIcon className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
-            className="hidden size-8 lg:flex"
-            size="icon"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
+            className="hidden h-8 w-8 p-0 lg:flex"
+            onClick={() => {
+              if (onPaginationChange) {
+                onPaginationChange(
+                  Math.ceil((pagination?.total ?? 0) / (pagination?.limit ?? 10)),
+                  pagination?.limit ?? 10,
+                );
+              } else {
+                table.setPageIndex(table.getPageCount() - 1);
+              }
+            }}
+            disabled={
+              pagination ? pagination.page >= Math.ceil(pagination.total / pagination.limit) : !table.getCanNextPage()
+            }
           >
             <span className="sr-only">Go to last page</span>
-            <ChevronsRight />
+            <ChevronsRightIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>

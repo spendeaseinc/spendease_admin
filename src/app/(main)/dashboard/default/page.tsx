@@ -2,15 +2,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CustomersCards } from "../customers/_components/customers-cards";
 
-import { ChartAreaInteractive } from "./_components/chart-area-interactive";
 import { CustomersChart } from "./_components/customers-chart";
 import { CustomersGraph } from "./_components/customers-graph";
 import { CustomersTable } from "./_components/customers-table";
-import { DataTable } from "./_components/data-table";
-import data from "./_components/data.json";
 import { SectionCards } from "./_components/section-cards";
 import { TransactionOverview } from "./_components/transaction-overview";
 import { TransactionsCards } from "./_components/transactions-cards";
+import { TransactionsChart } from "./_components/transactions-chart";
 
 export default function Page() {
   return (
@@ -39,8 +37,7 @@ export default function Page() {
         </TabsContent>
         <TabsContent className="flex flex-col gap-4 md:gap-6" value="transactions">
           <TransactionsCards />
-          <ChartAreaInteractive />
-          <DataTable data={data} />
+          <TransactionsChart />
         </TabsContent>
       </Tabs>
     </div>
