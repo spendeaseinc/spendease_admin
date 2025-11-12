@@ -59,7 +59,7 @@ async function getAuthToken() {
   return accessToken;
 }
 
-export async function getUsers(page: number): Promise<UsersResult>  {
+export async function getUsers(page: number): Promise<UsersResult> {
   try {
     const token = await getAuthToken();
 
