@@ -10,11 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
-import { partners } from "@/lib/dummy-data";
+import type { PartnerDisplay } from "@/lib/types";
 
-import { partnerBalanceColumns } from "./_components/partner-balance-columns";
+import { partnerBalanceColumns } from "./partner-balance-columns";
 
-export default function PartnerBalancePage() {
+interface PartnerBalanceTableClientProps {
+  partners: PartnerDisplay[];
+}
+
+export function PartnerBalanceTableClient({ partners }: PartnerBalanceTableClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
@@ -22,13 +26,11 @@ export default function PartnerBalancePage() {
   // Filter partners based on search and status
   const filteredPartners = useMemo(() => {
     return partners.filter((partner) => {
-      const matchesSearch =
-        partner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        partner.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === "all" || partner.status === statusFilter;
+      const matchesSearch = partner.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "all" || partner.statusDisplay === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, statusFilter]);
+  }, [partners, searchQuery, statusFilter]);
 
   const table = useDataTableInstance({
     data: filteredPartners,
@@ -42,14 +44,8 @@ export default function PartnerBalancePage() {
 
   const handleExport = () => {
     const csvContent = [
-      ["Partner Name", "Email", "Last Login", "Status", "Account Balance"],
-      ...filteredPartners.map((partner) => [
-        partner.name,
-        partner.email,
-        partner.lastLogin,
-        partner.status,
-        `${partner.currency} ${partner.balance}`,
-      ]),
+      ["Partner Name", "Status", "Account Balance"],
+      ...filteredPartners.map((partner) => [partner.name, partner.statusDisplay, `NGN ${partner.balance}`]),
     ]
       .map((row) => row.join(","))
       .join("\n");
@@ -90,7 +86,7 @@ export default function PartnerBalancePage() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <Input
-          placeholder="Filter transactions..."
+          placeholder="Search partners..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-sm"
@@ -102,7 +98,6 @@ export default function PartnerBalancePage() {
           <SelectContent>
             <SelectItem value="all">All Partners</SelectItem>
             <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
             <SelectItem value="Inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
@@ -118,26 +113,19 @@ export default function PartnerBalancePage() {
                   <Briefcase className="text-muted-foreground h-5 w-5" />
                 </div>
                 <Badge
-                  variant={
-                    partner.status === "Active" ? "default" : partner.status === "Pending" ? "secondary" : "outline"
-                  }
+                  variant={partner.statusDisplay === "Active" ? "default" : "secondary"}
                   className={
-                    partner.status === "Active"
+                    partner.statusDisplay === "Active"
                       ? "bg-green-100 text-green-700 hover:bg-green-100"
-                      : partner.status === "Pending"
-                        ? "bg-orange-100 text-orange-700 hover:bg-orange-100"
-                        : ""
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-100"
                   }
                 >
-                  {partner.status}
+                  {partner.statusDisplay}
                 </Badge>
               </div>
               <div>
                 <h3 className="text-muted-foreground mb-1 text-sm font-semibold">{partner.name}</h3>
-                <p className="text-2xl font-bold">
-                  {partner.currency}
-                  {partner.balance}
-                </p>
+                <p className="text-2xl font-bold">NGN {partner.balance.toLocaleString()}</p>
               </div>
             </div>
           ))}

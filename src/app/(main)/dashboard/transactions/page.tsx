@@ -5,7 +5,6 @@ import { useState } from "react";
 
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +13,7 @@ import { transactions as dummyTransactions } from "@/lib/dummy-data";
 import type { Transaction } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { DataTable } from "./_components/data-table";
 import { TransactionDetailsPanel } from "./_components/transaction-details-panel";
 
 export default function Page() {
@@ -130,41 +130,13 @@ export default function Page() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-muted-foreground text-sm">Total Balance</p>
-                  <p className="mt-2 text-2xl font-bold">₦{totalBalance.toLocaleString()}</p>
-                  <p className="text-muted-foreground mt-1 text-xs">+20.1% from last month</p>
-                </div>
-                <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm">Deposits</p>
-                  <p className="mt-2 text-2xl font-bold">₦{totalDeposits.toLocaleString()}</p>
+                  <p className="mt-2 text-2xl font-bold">Naira: ₦{totalDeposits.toLocaleString()}</p>
                   <p className="text-muted-foreground mt-1 text-xs">+180.1% from last month</p>
                 </div>
                 <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">

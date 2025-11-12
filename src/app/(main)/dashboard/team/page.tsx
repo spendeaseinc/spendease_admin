@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 
 import { Download, Filter, Plus, SlidersHorizontal } from "lucide-react";
 
-import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +17,15 @@ import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { teamMembers as initialTeamMembers } from "@/lib/dummy-data";
 import type { TeamMember, ModalType } from "@/lib/types";
 
+import { DataTable } from "../transactions/_components/data-table";
+
 import { AddUserDialog } from "./_components/add-user-dialog";
 import { DeleteUserDialog } from "./_components/delete-user-dialog";
 import { EditUserDialog } from "./_components/edit-user-dialog";
 import { SuccessDialog } from "./_components/success-dialog";
 import { teamColumns } from "./_components/team-columns";
 
-export default function TeamsPage() {
+export default function TeamPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -150,7 +151,7 @@ export default function TeamsPage() {
       <div className="flex h-full flex-col">
         <div className="border-b px-6 py-6">
           <div className="mb-6 flex items-center justify-between">
-            <h1 className="text-3xl font-semibold">Teams</h1>
+            <h1 className="text-3xl font-semibold">Team</h1>
             <div className="flex items-center gap-3">
               <Button onClick={() => setModalType("add-user")} variant="outline" className="gap-2 bg-transparent">
                 <Plus className="h-4 w-4" />

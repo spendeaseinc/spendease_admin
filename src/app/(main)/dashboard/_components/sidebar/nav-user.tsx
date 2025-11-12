@@ -1,7 +1,13 @@
 "use client";
 
-import { ChevronsUpDown, CircleUser, CreditCard, MessageSquareDot, LogOut } from "lucide-react";
+import { useTransition } from "react";
 
+import { useRouter } from "next/navigation";
+
+import { ChevronsUpDown, CircleUser, LogOut } from "lucide-react";
+import { toast } from "sonner";
+
+import { signOut } from "@/app/actions/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -25,6 +31,22 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  async function onSignOut() {
+    startTransition(async () => {
+      const result = await signOut();
+
+      if (result.success) {
+        toast.success(result.message);
+
+        router.push("/auth/login");
+      } else {
+        toast.error(result.message);
+      }
+    });
+  }
 
   return (
     <SidebarMenu>
@@ -70,17 +92,9 @@ export function NavUser({
                 <CircleUser />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <MessageSquareDot />
-                Notifications
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={onSignOut} disabled={isPending}>
               <LogOut />
               Log out
             </DropdownMenuItem>

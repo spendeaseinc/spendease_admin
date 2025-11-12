@@ -1,4 +1,4 @@
-import { DataTable } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";

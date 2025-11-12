@@ -1,3 +1,68 @@
+export interface PaginationData {
+  total_items: number;
+  page_size: number;
+  current: number;
+  count: number;
+  next: number;
+}
+
+export interface ApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    data: AuditLog[];
+    paging: PaginationData;
+    links: Array<{
+      href: string;
+      rel: string;
+      method: string;
+    }>;
+  };
+}
+
+export type ApiError = {
+  success: false;
+  message: string;
+  unauthorized?: true;
+};
+
+export interface AuditLog {
+  id: number;
+  reference: string;
+  event: string;
+  description: string;
+  actor: string;
+  actor_id: number;
+  target: boolean;
+  target_id: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuditLogSearchParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  event?: string;
+  actor?: string;
+  actor_id?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  format?: "excel" | "csv";
+}
+
+export interface PaginationInfo {
+  current: number;
+  page_size: number;
+  total_items: number;
+}
+
+export type AuditLogsSuccess = {
+  success: true;
+  auditLogs: AuditLog[];
+  pagination: PaginationData;
+};
+
 export type TeamMember = {
   id: string;
   name: string;
@@ -10,16 +75,15 @@ export type TeamMember = {
   initials: string;
 };
 
-export type AuditLog = {
-  id: string;
-  name: string;
-  initials: string;
-  event: string;
-  reference: string;
-  description: string;
-  role: string;
-  timestamp: string;
-};
+export interface User {
+  id: number;
+  email: string;
+  phone: string;
+  first_name: string;
+  last_name: string;
+  status: string;
+  created_at: string;
+}
 
 export type ModalType =
   | "add-user"
@@ -58,7 +122,13 @@ export type Partner = {
   balance: string;
   currency: string;
   initials: string;
+  logo?: string;
 };
+
+export interface PartnerDisplay extends Partner {
+  initials: string;
+  statusDisplay: "Active" | "Inactive";
+}
 
 export type TransactionDetailsModalType = "deposit" | "withdrawal" | null;
 
@@ -67,6 +137,9 @@ export type Customer = {
   name: string;
   email: string;
   phoneNumber: string;
+  phone_number: string;
+  last_name: string;
+  first_name: string;
   status: "verified" | "pending";
   initials: string;
   createdAt: string;

@@ -46,8 +46,8 @@ export const sidebarItems: NavGroup[] = [
         icon: WalletCards,
       },
       {
-        title: "Teams",
-        url: "/dashboard/teams",
+        title: "Team",
+        url: "/dashboard/team",
         icon: Users,
       },
       {
