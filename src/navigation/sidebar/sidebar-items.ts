@@ -52,7 +52,7 @@ export const sidebarItems: NavGroup[] = [
       },
       {
         title: "Audit",
-        url: "/dashboard/audit",
+        url: "/dashboard/audit-logs",
         icon: BookCheck,
       },
       {

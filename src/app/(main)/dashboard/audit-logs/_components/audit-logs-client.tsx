@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
 
-import { fetchUsers } from "@/app/actions/users";
-import type { User } from "@/lib/types";
+import { fetchAuditLogs } from "@/app/actions/audit-logs";
+import type { AuditLog } from "@/lib/types";
 
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 
-interface CustomersClientProps {
-  initialData: User[];
+interface AuditLogsClientProps {
+  initialData: AuditLog[];
   initialPagination: {
     totalItems: number;
     currentPage: number;
@@ -21,14 +21,15 @@ interface CustomersClientProps {
   };
 }
 
-export function CustomersClient({ initialData, initialPagination }: CustomersClientProps) {
+export function AuditLogsClient({ initialData, initialPagination }: AuditLogsClientProps) {
   const router = useRouter();
-  const [data, setData] = useState<User[]>(initialData);
+  const [data, setData] = useState<AuditLog[]>(initialData);
   const [totalItems, setTotalItems] = useState(initialPagination.totalItems);
   const [currentPage, setCurrentPage] = useState(initialPagination.currentPage);
   const [pageSize, setPageSize] = useState(initialPagination.pageSize);
   const [searchValue, setSearchValue] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [eventFilter, setEventFilter] = useState("all");
+  const [actorFilter, setActorFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
 
   const isFetchingRef = useRef(false);
@@ -39,16 +40,17 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
     isFetchingRef.current = true;
     setIsLoading(true);
     try {
-      const result = await fetchUsers({
+      const result = await fetchAuditLogs({
         page: currentPage,
-        limit: pageSize,
-        name: searchValue || undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined,
+        pageSize: pageSize,
+        search: searchValue || undefined,
+        event: eventFilter !== "all" ? eventFilter : undefined,
+        actor: actorFilter !== "all" ? actorFilter : undefined,
       });
 
       if ("success" in result) {
         if (result.unauthorized) {
-          toast.error("Please log in to view customers.");
+          toast.error("Please log in to view audit logs.");
           router.push("/login");
         } else {
           toast.error(result.message);
@@ -56,38 +58,39 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
         return;
       }
 
-      const customers = result;
+      const audits = result;
 
-      setData(customers.data.data);
-      setTotalItems(customers.data.paging.total_items);
+      setData(audits.data.data);
+      setTotalItems(audits.data.paging.total_items);
     } catch (error) {
-      console.error("Error fetching customers:", error);
-      toast.error("Error fetching customers");
+      console.error("Error fetching audit logs:", error);
+      toast.error("Error fetching audit logs");
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentPage, pageSize, searchValue, statusFilter, router]);
+  }, [currentPage, pageSize, searchValue, eventFilter, actorFilter, router]);
 
   const handleReset = useCallback(() => {
     setSearchValue("");
-    setStatusFilter("all");
+    setEventFilter("all");
+    setActorFilter("all");
     setCurrentPage(1);
   }, []);
 
   const handleExport = useCallback(() => {
     try {
-      const headers = ["ID", "Name", "Email", "Phone", "Status", "Created At"];
+      const headers = ["Reference", "Event", "Description", "Actor", "Actor ID", "Created At"];
       const csvRows = [
         headers.join(","),
-        ...data.map((user) => {
+        ...data.map((log) => {
           const row = [
-            `"${user.id}"`,
-            `"${user.first_name} ${user.last_name}"`,
-            `"${user.email}"`,
-            `"${user.phone}"`,
-            `"${user.status}"`,
-            `"${new Date(user.created_at).toLocaleString()}"`,
+            `"${log.reference}"`,
+            `"${log.event}"`,
+            `"${log.description.replace(/"/g, '""')}"`,
+            `"${log.actor}"`,
+            `"${log.actor_id}"`,
+            `"${new Date(log.createdAt).toLocaleString()}"`,
           ];
           return row.join(",");
         }),
@@ -99,13 +102,13 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
       const url = URL.createObjectURL(blob);
 
       link.setAttribute("href", url);
-      link.setAttribute("download", `customers-${new Date().toISOString().split("T")[0]}.csv`);
+      link.setAttribute("download", `audit-logs-${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      toast.success(`Exported ${data.length} customer records to CSV`);
+      toast.success(`Exported ${data.length} audit log entries to CSV`);
     } catch (error) {
       console.error("Error exporting data:", error);
       toast.error("Error exporting data");
@@ -114,7 +117,7 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
 
   useEffect(() => {
     // Reset to page 1 when filters change
-    const isFilterChange = searchValue || statusFilter !== "all";
+    const isFilterChange = searchValue || eventFilter !== "all" || actorFilter !== "all";
 
     if (isFilterChange && currentPage !== 1) {
       setCurrentPage(1);
@@ -131,7 +134,7 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
     );
 
     return () => clearTimeout(timer);
-  }, [searchValue, statusFilter, currentPage, pageSize, fetchData]);
+  }, [searchValue, eventFilter, actorFilter, currentPage, pageSize, fetchData]);
 
   return (
     <DataTable
@@ -144,8 +147,10 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
       onPageSizeChange={setPageSize}
       searchValue={searchValue}
       onSearchChange={setSearchValue}
-      statusFilter={statusFilter}
-      onStatusFilterChange={setStatusFilter}
+      eventFilter={eventFilter}
+      onEventFilterChange={setEventFilter}
+      actorFilter={actorFilter}
+      onActorFilterChange={setActorFilter}
       isLoading={isLoading}
       onReset={handleReset}
       onExport={handleExport}

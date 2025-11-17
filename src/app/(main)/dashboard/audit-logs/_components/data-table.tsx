@@ -43,8 +43,10 @@ interface DataTableProps<TData, TValue> {
   onPageSizeChange: (pageSize: number) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
+  eventFilter: string;
+  onEventFilterChange: (value: string) => void;
+  actorFilter: string;
+  onActorFilterChange: (value: string) => void;
   isLoading: boolean;
   onReset: () => void;
   onExport: () => void;
@@ -60,8 +62,10 @@ export function DataTable<TData, TValue>({
   onPageSizeChange,
   searchValue,
   onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
+  eventFilter,
+  onEventFilterChange,
+  actorFilter,
+  onActorFilterChange,
   isLoading,
   onReset,
   onExport,
@@ -97,9 +101,12 @@ export function DataTable<TData, TValue>({
           table={table}
           searchValue={searchValue}
           onSearchChange={onSearchChange}
-          statusFilter={statusFilter}
-          onStatusFilterChange={onStatusFilterChange}
+          eventFilter={eventFilter}
+          onEventFilterChange={onEventFilterChange}
+          actorFilter={actorFilter}
+          onActorFilterChange={onActorFilterChange}
           onReset={onReset}
+          onExport={onExport}
         />
         <div className="hidden items-center space-x-2 md:flex">
           <DropdownMenu>

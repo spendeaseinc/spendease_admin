@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TeamMemberRole } from "@/lib/types";
 import { formatToTitleCase } from "@/lib/utils";
 
 import { DataTablePagination } from "./data-table-pagination";
@@ -45,6 +46,9 @@ interface DataTableProps<TData, TValue> {
   onSearchChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  roleFilter: string;
+  onRoleFilterChange: (value: string) => void;
+  roles: TeamMemberRole[];
   isLoading: boolean;
   onReset: () => void;
   onExport: () => void;
@@ -62,6 +66,9 @@ export function DataTable<TData, TValue>({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  roleFilter,
+  onRoleFilterChange,
+  roles,
   isLoading,
   onReset,
   onExport,
@@ -99,6 +106,9 @@ export function DataTable<TData, TValue>({
           onSearchChange={onSearchChange}
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
+          roleFilter={roleFilter}
+          onRoleFilterChange={onRoleFilterChange}
+          roles={roles}
           onReset={onReset}
         />
         <div className="hidden items-center space-x-2 md:flex">

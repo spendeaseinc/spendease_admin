@@ -1,7 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { CustomersCards } from "../customers/_components/customers-cards";
-
 import { CustomersChart } from "./_components/customers-chart";
 import { CustomersGraph } from "./_components/customers-graph";
 import { CustomersTable } from "./_components/customers-table";
@@ -25,7 +23,7 @@ export default function Page() {
           <TransactionOverview />
         </TabsContent>
         <TabsContent className="flex flex-col gap-4 md:gap-6" value="customers">
-          <CustomersCards />
+          {/* <CustomersCards />*/}
           <div className="grid gap-4 lg:grid-cols-2">
             <CustomersTable />
 
