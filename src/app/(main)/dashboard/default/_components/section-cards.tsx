@@ -59,7 +59,7 @@ export function SectionCards() {
         <Card className="@container/card">
           <CardHeader>
             <CardDescription>Active Users</CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">2350</CardTitle>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">835</CardTitle>
             <CardAction>
               <Users className="h-4 w-4" />
             </CardAction>
