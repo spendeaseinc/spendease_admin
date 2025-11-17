@@ -10,7 +10,8 @@ export interface ApiResponse {
   status: boolean;
   message: string;
   data: {
-    data: AuditLog[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: any[];
     paging: PaginationData;
     links: Array<{
       href: string;
@@ -21,7 +22,7 @@ export interface ApiResponse {
 }
 
 export type ApiError = {
-  success: false;
+  success: boolean;
   message: string;
   unauthorized?: true;
 };
@@ -39,50 +40,65 @@ export interface AuditLog {
   updatedAt: string;
 }
 
-export interface AuditLogSearchParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  event?: string;
-  actor?: string;
-  actor_id?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  format?: "excel" | "csv";
-}
-
-export interface PaginationInfo {
-  current: number;
-  page_size: number;
-  total_items: number;
-}
-
-export type AuditLogsSuccess = {
-  success: true;
-  auditLogs: AuditLog[];
-  pagination: PaginationData;
-};
-
-export type TeamMember = {
-  id: string;
-  name: string;
-  email: string;
-  phoneNumber?: string;
-  lastLogin?: string;
-  role: "Viewer" | "Admin" | "Analyst" | "Product Manager" | "Super Admin";
-  status: "Active" | "Pending" | "Inactive";
-  createdAt: string;
-  initials: string;
-};
-
 export interface User {
   id: number;
   email: string;
-  phone: string;
   first_name: string;
   last_name: string;
-  status: string;
+  phone: string;
+  status: "unverified" | "verified" | "active" | "locked" | "suspended" | "deleted";
   created_at: string;
+  updated_at: string;
+}
+
+export interface TeamMemberRole {
+  id: number;
+  name: string;
+  type: string;
+  permissions: Record<string, Record<string, boolean>>;
+}
+
+export interface TeamMemberData {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  status: "active" | "inactive";
+  role_id: number;
+  admin_role: TeamMemberRole;
+  created_at: string;
+}
+
+export interface TeamsApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    data: TeamMemberData[];
+    count: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface RolesApiResponse {
+  status: boolean;
+  message: string;
+  data: TeamMemberRole[];
+}
+// </CHANGE>
+
+export interface UsersApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    data: User[];
+    count: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export type ModalType =
@@ -192,4 +208,16 @@ export type CustomerTransaction = {
   status: "Active" | "Pending";
   timestamp: string;
   balance: string;
+};
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  lastLogin?: string;
+  role: "Viewer" | "Admin" | "Analyst" | "Product Manager" | "Super Admin";
+  status: "Active" | "Pending" | "Inactive";
+  createdAt: string;
+  initials: string;
 };

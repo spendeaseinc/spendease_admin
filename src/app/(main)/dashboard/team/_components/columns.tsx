@@ -7,27 +7,23 @@ import { ArrowUpDown } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { User } from "@/lib/types";
+import type { TeamMemberData } from "@/lib/types";
 
-type StatusType = "active" | "verified" | "unverified" | "locked" | "suspended" | "deleted";
+type StatusType = "active" | "inactive";
 
-const statusVariants: Record<StatusType, "default" | "secondary" | "destructive" | "outline"> = {
+const statusVariants: Record<StatusType, "default" | "destructive"> = {
   active: "default",
-  verified: "secondary",
-  unverified: "outline",
-  locked: "destructive",
-  suspended: "destructive",
-  deleted: "destructive",
+  inactive: "destructive",
 };
 
-const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+const getStatusVariant = (status: string): "default" | "destructive" => {
   if (status in statusVariants) {
     return statusVariants[status as StatusType];
   }
-  return "outline";
+  return "default";
 };
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<TeamMemberData>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -65,6 +61,18 @@ export const columns: ColumnDef<User>[] = [
     header: "Phone",
     cell: ({ row }) => {
       return <div className="font-mono text-sm">{row.getValue("phone")}</div>;
+    },
+  },
+  {
+    accessorKey: "admin_role",
+    header: "Role",
+    cell: ({ row }) => {
+      const role = row.original.admin_role;
+      return (
+        <Badge variant="outline" className="font-medium capitalize">
+          {role.name}
+        </Badge>
+      );
     },
   },
   {

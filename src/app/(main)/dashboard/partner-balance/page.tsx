@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 
 import { Briefcase, LayoutGrid, List, Download } from "lucide-react";
 
-import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +142,10 @@ export default function PartnerBalancePage() {
           ))}
         </div>
       ) : (
-        <DataTable table={table} columns={partnerBalanceColumns} />
+        <>
+          <div>Coming soon</div>
+          {/* <DataTable table={table} columns={partnerBalanceColumns} /> */}
+        </>
       )}
     </div>
   );

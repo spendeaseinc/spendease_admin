@@ -1,287 +1,152 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import type { ApiError, ApiResponse } from "@/lib/types";
+import { handleApiResponse } from "@/lib/utils";
+import { getValueFromCookie } from "@/server/server-actions";
 
-import { User } from "@/lib/types";
+const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT;
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT ?? "https://spendeasebackend-production.up.railway.app";
-
-interface PaginationData {
-  total_items: number;
-  page_size: number;
-  current: number;
-  count: number;
-  next: number;
+interface FetchUsersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  status?: string;
 }
 
-interface UsersResponse {
-  status: boolean;
-  message: string;
-  data: {
-    data: User[];
-    paging: PaginationData;
-    links: Array<{
-      href: string;
-      rel: string;
-      method: string;
-    }>;
-  };
+function buildQueryParams(params: FetchUsersParams): URLSearchParams {
+  const queryParams = new URLSearchParams();
+
+  if (params.page) queryParams.append("page", params.page.toString());
+  if (params.limit) queryParams.append("limit", params.limit.toString());
+  if (params.search) queryParams.append("search", params.search);
+  if (params.name) queryParams.append("name", params.name);
+  if (params.email) queryParams.append("email", params.email);
+  if (params.phone) queryParams.append("phone", params.phone);
+  if (params.status && params.status !== "all") queryParams.append("status", params.status);
+
+  return queryParams;
 }
 
-type UsersSuccess = {
-  success: true;
-  users: User[];
-  pagination: PaginationData;
-};
-
-type UsersError = {
-  success: false;
-  message: string;
-  unauthorized?: true;
-};
-
-type UsersResult = UsersSuccess | UsersError;
-
-interface ApiResponse {
-  status: boolean;
-  message: string;
-  data?: any;
-}
-async function getAuthToken() {
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("accessToken")?.value;
-
-  if (!accessToken) {
-    throw new Error("Unauthorized");
-  }
-
-  return accessToken;
-}
-
-export async function getUsers(page: number): Promise<UsersResult> {
+export async function fetchUsers(params: FetchUsersParams = {}): Promise<ApiResponse | ApiError> {
   try {
-    const token = await getAuthToken();
+    const accessToken = await getValueFromCookie("accessToken");
 
-    const response = await fetch(`${API_BASE_URL}/api/admin/users?page=${page}`, {
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Authentication required",
+        unauthorized: true,
+      };
+    }
+
+    const queryParams = buildQueryParams(params);
+    const url = `${API_BASE_URL}/api/admin/users?${queryParams.toString()}`;
+
+    const response = await fetch(url, {
+      method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        return {
-          success: false,
-          message: "Unauthorized",
-          unauthorized: true,
-        };
-      }
-      throw new Error("Failed to fetch users");
-    }
-
-    const data: UsersResponse = await response.json();
-
-    if (data.status) {
-      return {
-        success: true,
-        users: data.data.data,
-        pagination: data.data.paging,
-      };
-    }
-
-    return {
-      success: false,
-      message: data.message || "Failed to fetch users",
-    };
+    return await handleApiResponse(response);
   } catch (error) {
-    console.error("Get users error:", error);
-
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return {
-        success: false,
-        message: "Unauthorized",
-        unauthorized: true,
-      };
-    }
-
+    console.error("Error fetching users:", error);
     return {
       success: false,
-      message: "An error occurred while fetching users",
+      message: error instanceof Error ? error.message : "Failed to fetch users",
     };
   }
 }
 
-export async function deleteUser(userId: string) {
+export async function fetchUserStats(): Promise<
+  | {
+      total: number;
+      active: number;
+      verified: number;
+    }
+  | ApiError
+> {
   try {
-    const token = await getAuthToken();
+    const accessToken = await getValueFromCookie("accessToken");
 
-    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
-      method: "DELETE",
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Authentication required",
+        unauthorized: true,
+      };
+    }
+
+    // Fetch all users without pagination to calculate stats
+    const url = `${API_BASE_URL}/api/admin/users`;
+
+    const response = await fetch(url, {
+      method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        return {
-          success: false,
-          message: "Unauthorized",
-          unauthorized: true,
-        };
-      }
-      throw new Error("Failed to delete user");
+    const result = await handleApiResponse(response);
+
+    if ("success" in result) {
+      return result;
     }
 
-    const data: ApiResponse = await response.json();
-
-    if (data.status) {
-      // Revalidate the users page to refresh the data
-      revalidatePath("/users");
-
-      return {
-        success: true,
-        message: data.message || "User deleted successfully",
-      };
-    }
-
-    return {
-      success: false,
-      message: data.message || "Failed to delete user",
-    };
-  } catch (error) {
-    console.error("Delete user error:", error);
-
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return {
-        success: false,
-        message: "Unauthorized",
-        unauthorized: true,
-      };
-    }
-
-    return {
-      success: false,
-      message: "An error occurred while deleting user",
-    };
-  }
-}
-
-export async function getUserProfile() {
-  try {
-    const token = await getAuthToken();
-
-    const response = await fetch(`${API_BASE_URL}/api/admin/users/profile`, {
+    const activeResponse = await fetch(`${url}?status=active`, {
+      method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        return {
-          success: false,
-          message: "Unauthorized",
-          unauthorized: true,
-        };
-      }
-      throw new Error("Failed to fetch user profile");
+    const activeResult = await handleApiResponse(activeResponse);
+
+    if ("success" in activeResult) {
+      return activeResult;
     }
 
-    const data: ApiResponse = await response.json();
-
-    if (data.status) {
-      return {
-        success: true,
-        profile: data.data,
-      };
-    }
-
-    return {
-      success: false,
-      message: data.message || "Failed to fetch user profile",
-    };
-  } catch (error) {
-    console.error("Get user profile error:", error);
-
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return {
-        success: false,
-        message: "Unauthorized",
-        unauthorized: true,
-      };
-    }
-
-    return {
-      success: false,
-      message: "An error occurred while fetching user profile",
-    };
-  }
-}
-
-export async function updateUserProfile(profileData: any) {
-  try {
-    const token = await getAuthToken();
-
-    const response = await fetch(`${API_BASE_URL}/api/admin/users/profile/update`, {
-      method: "PUT",
+    const verifiedResponse = await fetch(`${url}?status=verified`, {
+      method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(profileData),
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        return {
-          success: false,
-          message: "Unauthorized",
-          unauthorized: true,
-        };
-      }
-      throw new Error("Failed to update user profile");
+    const verifiedResult = await handleApiResponse(verifiedResponse);
+
+    if ("success" in verifiedResult) {
+      return verifiedResult;
     }
 
-    const data: ApiResponse = await response.json();
-
-    if (data.status) {
-      // Revalidate relevant paths
-      revalidatePath("/settings/account");
-
-      return {
-        success: true,
-        message: data.message || "Profile updated successfully",
-        profile: data.data,
-      };
-    }
+    // Calculate stats from the response
+    const users = result.data.data;
+    const total = result.data.paging.total_items || users.length;
+    const active = activeResult.data.paging.total_items;
+    const verified = verifiedResult.data.paging.total_items;
 
     return {
-      success: false,
-      message: data.message || "Failed to update user profile",
+      total,
+      active,
+      verified,
     };
   } catch (error) {
-    console.error("Update user profile error:", error);
-
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return {
-        success: false,
-        message: "Unauthorized",
-        unauthorized: true,
-      };
-    }
-
+    console.error("Error fetching user stats:", error);
     return {
       success: false,
-      message: "An error occurred while updating user profile",
+      message: error instanceof Error ? error.message : "Failed to fetch user stats",
     };
   }
 }
