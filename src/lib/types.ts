@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface PaginationData {
   total_items: number;
   page_size: number;
@@ -6,11 +7,12 @@ export interface PaginationData {
   next: number;
 }
 
+// API Responses
+
 export interface ApiResponse {
   status: boolean;
   message: string;
   data: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any[];
     paging: PaginationData;
     links: Array<{
@@ -26,6 +28,46 @@ export type ApiError = {
   message: string;
   unauthorized?: true;
 };
+
+export interface RolesApiResponse {
+  status: boolean;
+  message: string;
+  data: TeamMemberRole[];
+}
+
+export interface UsersApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    data: User[];
+    count: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface PartnerBalanceResponse {
+  status: boolean;
+  message: string;
+  data: PartnerBalanceData;
+}
+
+export interface WaitlistApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    data: WaitlistEntry[];
+    paging: PaginationData;
+    links: Array<{
+      href: string;
+      rel: string;
+      method: string;
+    }>;
+  };
+}
+
+// Data types
 
 export interface AuditLog {
   id: number;
@@ -70,37 +112,6 @@ export interface TeamMemberData {
   created_at: string;
 }
 
-export interface TeamsApiResponse {
-  status: boolean;
-  message: string;
-  data: {
-    data: TeamMemberData[];
-    count: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
-export interface RolesApiResponse {
-  status: boolean;
-  message: string;
-  data: TeamMemberRole[];
-}
-// </CHANGE>
-
-export interface UsersApiResponse {
-  status: boolean;
-  message: string;
-  data: {
-    data: User[];
-    count: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
 export type ModalType =
   | "add-user"
   | "edit-user"
@@ -129,66 +140,57 @@ export type Transaction = {
   transactionId: string;
 };
 
-export type Partner = {
-  id: string;
-  name: string;
-  email: string;
-  lastLogin: string;
-  status: "Active" | "Pending" | "Inactive";
-  balance: string;
-  currency: string;
-  initials: string;
-  logo?: string;
-};
-
-export interface PartnerDisplay extends Partner {
-  initials: string;
-  statusDisplay: "Active" | "Inactive";
-}
-
 export type TransactionDetailsModalType = "deposit" | "withdrawal" | null;
 
 export type Customer = {
   id: string;
-  name: string;
   email: string;
-  phoneNumber: string;
-  phone_number: string;
+  phone: string;
   last_name: string;
   first_name: string;
-  status: "verified" | "pending";
-  initials: string;
+  status: "verified" | "pending" | "active";
   createdAt: string;
-  // Customer profile details
-  firstName?: string;
-  lastName?: string;
-  otherName?: string;
-  gender?: string;
-  dateOfBirth?: string;
-  maritalStatus?: string;
-  placeOfBirth?: string;
-  lgaOfOrigin?: string;
-  stateOfOrigin?: string;
-  nationality?: string;
-  religion?: string;
-  mothersMaidenName?: string;
-  bvn?: string;
-  // Address information
-  housePlotNumber?: string;
-  streetName?: string;
-  landmark?: string;
-  lga?: string;
-  // Means of identification
-  idType?: string;
-  idNumber?: string;
-  dateIssued?: string;
-  expiryDate?: string;
+  updatedAt: string;
+  username?: string;
+  profile_image?: string;
+  meta: KycResponse;
   // Account information
   accounts?: CustomerAccount[];
   transactions?: CustomerTransaction[];
-  kycLevel?: string;
-  profileImage?: string;
 };
+
+export interface KycResponse {
+  kyc: any;
+  bvn: BvnDetails;
+  nin: NinDetails;
+}
+
+export interface BvnDetails {
+  bvn: string;
+  nin: string;
+  email: string;
+  phone: string;
+  photo: string;
+  title: string;
+  gender: string;
+  lastname: string;
+  birthdate: string;
+  firstname: string;
+  middlename: string;
+  nationality: string;
+  lga_of_origin: string;
+  marital_status: string;
+  state_of_origin: string;
+  level_of_account: string;
+  lga_of_residence: string;
+  registration_date: string;
+  state_of_residence: string;
+  residential_address: string;
+}
+
+export interface NinDetails {
+  nin: string;
+}
 
 export type CustomerAccount = {
   id: string;
@@ -221,3 +223,22 @@ export type TeamMember = {
   createdAt: string;
   initials: string;
 };
+
+export interface PartnerBalance {
+  balance: string;
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+}
+
+export interface PartnerBalanceData {
+  [key: string]: PartnerBalance;
+}
+
+export interface WaitlistEntry {
+  id: number;
+  email: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  updatedAt: string;
+}

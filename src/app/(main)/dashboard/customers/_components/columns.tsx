@@ -1,31 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 "use client";
 
+import Link from "next/link";
+
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Eye } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { User } from "@/lib/types";
-
-type StatusType = "active" | "verified" | "unverified" | "locked" | "suspended" | "deleted";
-
-const statusVariants: Record<StatusType, "default" | "secondary" | "destructive" | "outline"> = {
-  active: "default",
-  verified: "secondary",
-  unverified: "outline",
-  locked: "destructive",
-  suspended: "destructive",
-  deleted: "destructive",
-};
-
-const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-  if (status in statusVariants) {
-    return statusVariants[status as StatusType];
-  }
-  return "outline";
-};
+import { getStatusVariant } from "@/lib/utils";
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -99,6 +85,31 @@ export const columns: ColumnDef<User>[] = [
           <span className="text-sm">{date.toLocaleDateString()}</span>
           <span className="text-muted-foreground text-xs">{formatDistanceToNow(date, { addSuffix: true })}</span>
         </div>
+      );
+    },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const customerId = row.original.id;
+      const status = row.getValue("status") as string;
+
+      return status === "active" ? (
+        <Link href={`/dashboard/customers/${customerId}`}>
+          <Button variant="ghost" size="sm" className="flex items-center">
+            <Eye className="h-4 w-4" /> View
+          </Button>
+        </Link>
+      ) : (
+        <Button
+          onClick={() => toast.error("User hasn't completed KYC")}
+          variant="ghost"
+          size="sm"
+          className="flex items-center"
+        >
+          <Eye className="h-4 w-4" /> View
+        </Button>
       );
     },
   },

@@ -1,7 +1,7 @@
 "use server";
 
 import type { ApiResponse, ApiError } from "@/lib/types";
-import { handleApiResponse } from "@/lib/utils";
+import { buildQueryParams, handleApiResponse } from "@/lib/utils";
 import { getValueFromCookie } from "@/server/server-actions";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT;
@@ -16,19 +16,6 @@ interface FetchAuditLogsParams {
   sortOrder?: string;
 }
 
-function buildQueryParams(params: FetchAuditLogsParams): URLSearchParams {
-  const queryParams = new URLSearchParams();
-
-  if (params.page) queryParams.append("page", params.page.toString());
-  if (params.search) queryParams.append("search", params.search);
-  if (params.event) queryParams.append("event", params.event);
-  if (params.actor) queryParams.append("actor", params.actor);
-  if (params.sortBy) queryParams.append("sort_by", params.sortBy);
-  if (params.sortOrder) queryParams.append("sort_order", params.sortOrder);
-
-  return queryParams;
-}
-
 export async function fetchAuditLogs(params: FetchAuditLogsParams = {}): Promise<ApiResponse | ApiError> {
   try {
     const accessToken = await getValueFromCookie("accessToken");
@@ -41,8 +28,15 @@ export async function fetchAuditLogs(params: FetchAuditLogsParams = {}): Promise
       };
     }
 
-    const queryParams = buildQueryParams(params);
-    const url = `${API_BASE_URL}/api/admin/misc/audit-logs?${queryParams.toString()}`;
+    const queryString = buildQueryParams({
+      page: params.page,
+      search: params.search,
+      event: params.event,
+      actor: params.actor,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+    });
+    const url = `${API_BASE_URL}/api/admin/misc/audit-logs?${queryString}`;
 
     const response = await fetch(url, {
       method: "GET",

@@ -106,7 +106,6 @@ export function DataTable<TData, TValue>({
           actorFilter={actorFilter}
           onActorFilterChange={onActorFilterChange}
           onReset={onReset}
-          onExport={onExport}
         />
         <div className="hidden items-center space-x-2 md:flex">
           <DropdownMenu>

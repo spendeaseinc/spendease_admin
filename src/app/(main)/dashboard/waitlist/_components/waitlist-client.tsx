@@ -6,31 +6,29 @@ import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
 
-import { fetchTeams } from "@/app/actions/teams";
-import type { TeamMemberData, TeamMemberRole } from "@/lib/types";
+import { fetchWaitlist } from "@/app/actions/waitlist";
+import type { WaitlistEntry } from "@/lib/types";
 
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 
-interface TeamsClientProps {
-  initialData: TeamMemberData[];
+interface WaitlistClientProps {
+  initialData: WaitlistEntry[];
   initialPagination: {
     totalItems: number;
     currentPage: number;
     pageSize: number;
   };
-  roles: TeamMemberRole[];
 }
 
-export function TeamsClient({ initialData, initialPagination, roles }: TeamsClientProps) {
+export function WaitlistClient({ initialData, initialPagination }: WaitlistClientProps) {
   const router = useRouter();
-  const [data, setData] = useState<TeamMemberData[]>(initialData);
+  const [data, setData] = useState<WaitlistEntry[]>(initialData);
   const [totalItems, setTotalItems] = useState(initialPagination.totalItems);
   const [currentPage, setCurrentPage] = useState(initialPagination.currentPage);
   const [pageSize, setPageSize] = useState(initialPagination.pageSize);
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [roleFilter, setRoleFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
 
   const isFetchingRef = useRef(false);
@@ -41,58 +39,52 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
     isFetchingRef.current = true;
     setIsLoading(true);
     try {
-      const result = await fetchTeams({
+      const result = await fetchWaitlist({
         page: currentPage,
         limit: pageSize,
-        search: searchValue || undefined,
+        email: searchValue || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
-        role_id: roleFilter !== "all" ? parseInt(roleFilter) : undefined,
       });
 
       if ("success" in result) {
         if (result.unauthorized) {
-          toast.error("Please log in to view teams.");
-          router.push("/auth/login");
+          toast.error("Please log in to view waitlist.");
+          router.push("/login");
         } else {
           toast.error(result.message);
         }
         return;
       }
 
-      const teams = result;
-
-      setData(teams.data.data);
-      setTotalItems(teams.data.paging.total_items);
+      setData(result.data.data);
+      setTotalItems(result.data.paging.total_items);
     } catch (error) {
-      console.error("Error fetching teams:", error);
-      toast.error("Error fetching teams");
+      console.error("Error fetching waitlist:", error);
+      toast.error("Error fetching waitlist");
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentPage, pageSize, searchValue, statusFilter, roleFilter, router]);
+  }, [currentPage, pageSize, searchValue, statusFilter, router]);
 
   const handleReset = useCallback(() => {
     setSearchValue("");
     setStatusFilter("all");
-    setRoleFilter("all");
     setCurrentPage(1);
   }, []);
 
   const handleExport = useCallback(() => {
     try {
-      const headers = ["ID", "Name", "Email", "Phone", "Role", "Status", "Created At"];
+      const headers = ["ID", "Email", "Status", "Created At", "Updated At"];
       const csvRows = [
         headers.join(","),
-        ...data.map((member) => {
+        ...data.map((entry) => {
           const row = [
-            `"${member.id}"`,
-            `"${member.first_name} ${member.last_name}"`,
-            `"${member.email}"`,
-            `"${member.phone}"`,
-            `"${member.admin_role.name}"`,
-            `"${member.status}"`,
-            `"${new Date(member.created_at).toLocaleString()}"`,
+            `"${entry.id}"`,
+            `"${entry.email}"`,
+            `"${entry.status}"`,
+            `"${new Date(entry.createdAt).toLocaleString()}"`,
+            `"${new Date(entry.updatedAt).toLocaleString()}"`,
           ];
           return row.join(",");
         }),
@@ -104,13 +96,13 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
       const url = URL.createObjectURL(blob);
 
       link.setAttribute("href", url);
-      link.setAttribute("download", `team-members-${new Date().toISOString().split("T")[0]}.csv`);
+      link.setAttribute("download", `waitlist-${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      toast.success(`Exported ${data.length} team member records to CSV`);
+      toast.success(`Exported ${data.length} waitlist entries to CSV`);
     } catch (error) {
       console.error("Error exporting data:", error);
       toast.error("Error exporting data");
@@ -118,15 +110,13 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
   }, [data]);
 
   useEffect(() => {
-    // Reset to page 1 when filters change
-    const isFilterChange = searchValue || statusFilter !== "all" || roleFilter !== "all";
+    const isFilterChange = searchValue || statusFilter !== "all";
 
     if (isFilterChange && currentPage !== 1) {
       setCurrentPage(1);
       return;
     }
 
-    // Debounce search/filter changes, immediate for pagination
     const shouldDebounce = isFilterChange;
     const timer = setTimeout(
       () => {
@@ -136,7 +126,7 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
     );
 
     return () => clearTimeout(timer);
-  }, [searchValue, statusFilter, roleFilter, currentPage, pageSize, fetchData]);
+  }, [searchValue, statusFilter, currentPage, pageSize, fetchData]);
 
   return (
     <DataTable
@@ -151,9 +141,6 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
       onSearchChange={setSearchValue}
       statusFilter={statusFilter}
       onStatusFilterChange={setStatusFilter}
-      roleFilter={roleFilter}
-      onRoleFilterChange={setRoleFilter}
-      roles={roles}
       isLoading={isLoading}
       onReset={handleReset}
       onExport={handleExport}

@@ -6,7 +6,7 @@ import type z from "zod";
 
 import type { LoginSchema, ForgotPasswordSchema, ResetPasswordSchema } from "@/lib/schema";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT ?? "https://spendeasebackend-production.up.railway.app";
+const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT;
 
 interface SignInResponse {
   status: boolean;

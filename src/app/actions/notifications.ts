@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT ?? "https://spendeasebackend-production.up.railway.app";
+const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT;
 
 interface SendNotificationData {
   title: string;

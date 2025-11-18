@@ -1,18 +1,15 @@
-/* eslint-disable react/no-array-index-key */
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 
 import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type SortingState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  type SortingState,
+  type ColumnDef,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import { DownloadIcon, SlidersHorizontal } from "lucide-react";
 
@@ -40,7 +37,7 @@ interface DataTableProps<TData, TValue> {
   currentPage: number;
   pageSize: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
+  onPageSizeChange: (size: number) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
   statusFilter: string;
@@ -66,26 +63,21 @@ export function DataTable<TData, TValue>({
   onReset,
   onExport,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState({});
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
     },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(totalItems / pageSize),
   });
@@ -94,7 +86,6 @@ export function DataTable<TData, TValue>({
     <Card className="bg-transparent p-4 md:p-6">
       <div className="flex items-center justify-between">
         <DataTableToolbar
-          table={table}
           searchValue={searchValue}
           onSearchChange={onSearchChange}
           statusFilter={statusFilter}
@@ -140,7 +131,7 @@ export function DataTable<TData, TValue>({
           </Button>
         </div>
       </div>
-      <Card className="rounded-lg bg-transparent py-0">
+      <div className="mt-4 rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -163,10 +154,11 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {isLoading ? (
               Array.from({ length: pageSize }).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
-                  {table.getVisibleLeafColumns().map((column) => (
-                    <TableCell key={`${column.id}-${index}`}>
-                      <Skeleton className="h-10 w-full" />
+                // eslint-disable-next-line react/no-array-index-key
+                <TableRow key={index}>
+                  {table.getVisibleFlatColumns().map((column) => (
+                    <TableCell key={column.id}>
+                      <Skeleton className="h-6 w-full" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -182,13 +174,13 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results found.
+                  No waitlist entries found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </Card>
+      </div>
       <DataTablePagination
         table={table}
         totalItems={totalItems}
