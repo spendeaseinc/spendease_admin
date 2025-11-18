@@ -22,10 +22,8 @@ const searchItems = [
   { group: "Dashboards", icon: BookCheck, label: "Audit", disabled: true },
   { group: "Dashboards", icon: CircleDollarSign, label: "Partner Balance", disabled: true },
   { group: "Dashboards", icon: Bell, label: "Notifications", disabled: true },
-  { group: "Authentication", label: "Login v1" },
-  { group: "Authentication", label: "Login v2" },
-  { group: "Authentication", label: "Register v1" },
-  { group: "Authentication", label: "Register v2" },
+  { group: "Authentication", label: "Login" },
+  { group: "Authentication", label: "Forgot Password" },
 ];
 
 export function SearchDialog() {

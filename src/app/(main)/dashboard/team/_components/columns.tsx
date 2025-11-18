@@ -8,20 +8,7 @@ import { ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TeamMemberData } from "@/lib/types";
-
-type StatusType = "active" | "inactive";
-
-const statusVariants: Record<StatusType, "default" | "destructive"> = {
-  active: "default",
-  inactive: "destructive",
-};
-
-const getStatusVariant = (status: string): "default" | "destructive" => {
-  if (status in statusVariants) {
-    return statusVariants[status as StatusType];
-  }
-  return "default";
-};
+import { getStatusVariant } from "@/lib/utils";
 
 export const columns: ColumnDef<TeamMemberData>[] = [
   {

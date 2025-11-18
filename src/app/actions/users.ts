@@ -1,7 +1,7 @@
 "use server";
 
-import type { ApiError, ApiResponse } from "@/lib/types";
-import { handleApiResponse } from "@/lib/utils";
+import type { ApiError, ApiResponse, Customer } from "@/lib/types";
+import { buildQueryParams, handleApiResponse } from "@/lib/utils";
 import { getValueFromCookie } from "@/server/server-actions";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT;
@@ -16,20 +16,6 @@ interface FetchUsersParams {
   status?: string;
 }
 
-function buildQueryParams(params: FetchUsersParams): URLSearchParams {
-  const queryParams = new URLSearchParams();
-
-  if (params.page) queryParams.append("page", params.page.toString());
-  if (params.limit) queryParams.append("limit", params.limit.toString());
-  if (params.search) queryParams.append("search", params.search);
-  if (params.name) queryParams.append("name", params.name);
-  if (params.email) queryParams.append("email", params.email);
-  if (params.phone) queryParams.append("phone", params.phone);
-  if (params.status && params.status !== "all") queryParams.append("status", params.status);
-
-  return queryParams;
-}
-
 export async function fetchUsers(params: FetchUsersParams = {}): Promise<ApiResponse | ApiError> {
   try {
     const accessToken = await getValueFromCookie("accessToken");
@@ -42,8 +28,17 @@ export async function fetchUsers(params: FetchUsersParams = {}): Promise<ApiResp
       };
     }
 
-    const queryParams = buildQueryParams(params);
-    const url = `${API_BASE_URL}/api/admin/users?${queryParams.toString()}`;
+    const queryString = buildQueryParams({
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      name: params.name,
+      email: params.email,
+      phone: params.phone,
+      status: params.status,
+    });
+
+    const url = `${API_BASE_URL}/api/admin/users?${queryString}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -147,6 +142,45 @@ export async function fetchUserStats(): Promise<
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to fetch user stats",
+    };
+  }
+}
+
+export async function fetchCustomerById(id: string): Promise<Customer | ApiError> {
+  try {
+    const accessToken = await getValueFromCookie("accessToken");
+
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Authentication required",
+        unauthorized: true,
+      };
+    }
+
+    const url = `${API_BASE_URL}/api/admin/users/${id}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const result = await handleApiResponse(response);
+
+    if ("success" in result) {
+      return result;
+    }
+
+    return result.data as any;
+  } catch (error) {
+    console.error("Error fetching customer:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch customer",
     };
   }
 }

@@ -16,7 +16,6 @@ interface DataTableToolbarProps<TData> {
   actorFilter: string;
   onActorFilterChange: (value: string) => void;
   onReset: () => void;
-  onExport: () => void;
 }
 
 export function DataTableToolbar<TData>({
