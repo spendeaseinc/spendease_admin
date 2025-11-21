@@ -31,10 +31,11 @@ export function formatToTitleCase(inputString: string) {
   return titleCaseString;
 }
 
-type StatusType = "active" | "verified" | "unverified" | "locked" | "suspended" | "deleted";
+type StatusType = "active" | "pending" | "verified" | "unverified" | "locked" | "suspended" | "deleted";
 
 const statusVariants: Record<StatusType, "default" | "primary" | "green" | "secondary" | "destructive" | "outline"> = {
   active: "primary",
+  pending: "primary",
   verified: "green",
   unverified: "outline",
   locked: "destructive",
@@ -168,4 +169,11 @@ export async function handlePartnersApiResponse(response: Response): Promise<Par
       message: "Failed to parse response",
     };
   }
+}
+
+export function adjustDateTo(dateTo?: string): string | undefined {
+  if (!dateTo) return undefined;
+  const date = new Date(dateTo);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().split("T")[0];
 }

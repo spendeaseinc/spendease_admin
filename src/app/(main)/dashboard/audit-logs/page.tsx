@@ -34,7 +34,7 @@ export default async function AuditLogsPage() {
   return (
     <div className="container mx-auto">
       <div className="mb-4 md:mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Audit</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
         <p className="text-muted-foreground">Manage and view all audit logs</p>
       </div>
       <AuditLogsClient

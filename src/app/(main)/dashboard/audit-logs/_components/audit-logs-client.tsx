@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState, useRef } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { format } from "date-fns";
 import { toast } from "sonner";
 
-import { fetchAuditLogs } from "@/app/actions/audit-logs";
+import { fetchAuditLogs, exportAuditLogs } from "@/app/actions/audit-logs";
 import type { AuditLog } from "@/lib/types";
 
 import { columns } from "./columns";
@@ -30,9 +31,13 @@ export function AuditLogsClient({ initialData, initialPagination }: AuditLogsCli
   const [searchValue, setSearchValue] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
   const [actorFilter, setActorFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExportLoading, setIsExportLoading] = useState(false);
 
   const isFetchingRef = useRef(false);
+  const prevFiltersRef = useRef({ searchValue, eventFilter, actorFilter, dateFrom, dateTo });
 
   const fetchData = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -46,6 +51,8 @@ export function AuditLogsClient({ initialData, initialPagination }: AuditLogsCli
         search: searchValue || undefined,
         event: eventFilter !== "all" ? eventFilter : undefined,
         actor: actorFilter !== "all" ? actorFilter : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
       });
 
       if ("success" in result) {
@@ -69,63 +76,78 @@ export function AuditLogsClient({ initialData, initialPagination }: AuditLogsCli
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentPage, pageSize, searchValue, eventFilter, actorFilter, router]);
+  }, [currentPage, pageSize, searchValue, eventFilter, actorFilter, dateFrom, dateTo, router]);
 
   const handleReset = useCallback(() => {
     setSearchValue("");
     setEventFilter("all");
     setActorFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setCurrentPage(1);
   }, []);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     try {
-      const headers = ["Reference", "Event", "Description", "Actor", "Actor ID", "Created At"];
-      const csvRows = [
-        headers.join(","),
-        ...data.map((log) => {
-          const row = [
-            `"${log.reference}"`,
-            `"${log.event}"`,
-            `"${log.description.replace(/"/g, '""')}"`,
-            `"${log.actor}"`,
-            `"${log.actor_id}"`,
-            `"${new Date(log.createdAt).toLocaleString()}"`,
-          ];
-          return row.join(",");
-        }),
-      ];
+      setIsExportLoading(true);
+      const result = await exportAuditLogs({
+        search: searchValue || undefined,
+        event: eventFilter !== "all" ? eventFilter : undefined,
+        actor: actorFilter !== "all" ? actorFilter : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+      });
 
-      const csvContent = csvRows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      if ("success" in result) {
+        if (result.unauthorized) {
+          toast.error("Please log in to export audit logs.");
+          router.push("/auth/login");
+        } else {
+          toast.error(result.message);
+        }
+        return;
+      }
+
+      // Create download link for the blob
+      const blob = result;
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-
-      link.setAttribute("href", url);
-      link.setAttribute("download", `audit-logs-${new Date().toISOString().split("T")[0]}.csv`);
-      link.style.visibility = "hidden";
+      link.href = url;
+      link.setAttribute("download", `audit-logs-${new Date().toISOString().split("T")[0]}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
+      window.URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${data.length} audit log entries to CSV`);
+      toast.success("Successfully exported audit log data");
     } catch (error) {
       console.error("Error exporting data:", error);
       toast.error("Error exporting data");
+    } finally {
+      setIsExportLoading(false);
     }
-  }, [data]);
+  }, [searchValue, eventFilter, actorFilter, dateFrom, dateTo, router]);
 
   useEffect(() => {
-    // Reset to page 1 when filters change
-    const isFilterChange = searchValue || eventFilter !== "all" || actorFilter !== "all";
+    const filtersChanged =
+      prevFiltersRef.current.searchValue !== searchValue ||
+      prevFiltersRef.current.eventFilter !== eventFilter ||
+      prevFiltersRef.current.actorFilter !== actorFilter ||
+      prevFiltersRef.current.dateFrom !== dateFrom ||
+      prevFiltersRef.current.dateTo !== dateTo;
 
-    if (isFilterChange && currentPage !== 1) {
+    // Reset to page 1 only when filters change, not when they're just active
+    if (filtersChanged && currentPage !== 1) {
+      prevFiltersRef.current = { searchValue, eventFilter, actorFilter, dateFrom, dateTo };
       setCurrentPage(1);
       return;
     }
 
+    // Update the ref after checking
+    prevFiltersRef.current = { searchValue, eventFilter, actorFilter, dateFrom, dateTo };
+
     // Debounce search/filter changes, immediate for pagination
-    const shouldDebounce = isFilterChange;
+    const shouldDebounce = filtersChanged;
     const timer = setTimeout(
       () => {
         fetchData();
@@ -134,7 +156,7 @@ export function AuditLogsClient({ initialData, initialPagination }: AuditLogsCli
     );
 
     return () => clearTimeout(timer);
-  }, [searchValue, eventFilter, actorFilter, currentPage, pageSize, fetchData]);
+  }, [searchValue, eventFilter, actorFilter, dateFrom, dateTo, currentPage, pageSize, fetchData]);
 
   return (
     <DataTable
@@ -151,7 +173,12 @@ export function AuditLogsClient({ initialData, initialPagination }: AuditLogsCli
       onEventFilterChange={setEventFilter}
       actorFilter={actorFilter}
       onActorFilterChange={setActorFilter}
+      dateFrom={dateFrom}
+      onDateFromChange={setDateFrom}
+      dateTo={dateTo}
+      onDateToChange={setDateTo}
       isLoading={isLoading}
+      isExportLoading={isExportLoading}
       onReset={handleReset}
       onExport={handleExport}
     />

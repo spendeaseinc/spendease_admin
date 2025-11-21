@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState, useRef } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { format } from "date-fns";
 import { toast } from "sonner";
 
-import { fetchTeams } from "@/app/actions/teams";
+import { fetchTeams, exportTeams } from "@/app/actions/teams";
 import type { TeamMemberData, TeamMemberRole } from "@/lib/types";
 
 import { columns } from "./columns";
@@ -31,9 +32,13 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExportLoading, setIsExportLoading] = useState(false);
 
   const isFetchingRef = useRef(false);
+  const prevFiltersRef = useRef({ searchValue, statusFilter, roleFilter, dateFrom, dateTo });
 
   const fetchData = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -43,16 +48,18 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
     try {
       const result = await fetchTeams({
         page: currentPage,
-        limit: pageSize,
+        pageSize: pageSize,
         search: searchValue || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
-        role_id: roleFilter !== "all" ? parseInt(roleFilter) : undefined,
+        role_id: roleFilter !== "all" ? Number.parseInt(roleFilter) : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
       });
 
       if ("success" in result) {
         if (result.unauthorized) {
           toast.error("Please log in to view teams.");
-          router.push("/auth/login");
+          router.push("/login");
         } else {
           toast.error(result.message);
         }
@@ -70,64 +77,76 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentPage, pageSize, searchValue, statusFilter, roleFilter, router]);
+  }, [currentPage, pageSize, searchValue, statusFilter, roleFilter, dateFrom, dateTo, router]);
 
   const handleReset = useCallback(() => {
     setSearchValue("");
     setStatusFilter("all");
     setRoleFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setCurrentPage(1);
   }, []);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     try {
-      const headers = ["ID", "Name", "Email", "Phone", "Role", "Status", "Created At"];
-      const csvRows = [
-        headers.join(","),
-        ...data.map((member) => {
-          const row = [
-            `"${member.id}"`,
-            `"${member.first_name} ${member.last_name}"`,
-            `"${member.email}"`,
-            `"${member.phone}"`,
-            `"${member.admin_role.name}"`,
-            `"${member.status}"`,
-            `"${new Date(member.created_at).toLocaleString()}"`,
-          ];
-          return row.join(",");
-        }),
-      ];
+      setIsExportLoading(true);
+      const result = await exportTeams({
+        search: searchValue || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        role_id: roleFilter !== "all" ? Number.parseInt(roleFilter) : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+      });
 
-      const csvContent = csvRows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      if ("success" in result) {
+        if (result.unauthorized) {
+          toast.error("Please log in to export teams.");
+          router.push("/login");
+        } else {
+          toast.error(result.message);
+        }
+        return;
+      }
+
+      const url = URL.createObjectURL(result);
       const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-
-      link.setAttribute("href", url);
-      link.setAttribute("download", `team-members-${new Date().toISOString().split("T")[0]}.csv`);
-      link.style.visibility = "hidden";
+      link.href = url;
+      link.download = `team-members-${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${data.length} team member records to CSV`);
+      toast.success("Team members exported successfully");
     } catch (error) {
-      console.error("Error exporting data:", error);
-      toast.error("Error exporting data");
+      console.error("Error exporting teams:", error);
+      toast.error("Error exporting teams");
+    } finally {
+      setIsExportLoading(false);
     }
-  }, [data]);
+  }, [searchValue, statusFilter, roleFilter, dateFrom, dateTo, router]);
 
   useEffect(() => {
-    // Reset to page 1 when filters change
-    const isFilterChange = searchValue || statusFilter !== "all" || roleFilter !== "all";
+    const filtersChanged =
+      prevFiltersRef.current.searchValue !== searchValue ||
+      prevFiltersRef.current.statusFilter !== statusFilter ||
+      prevFiltersRef.current.roleFilter !== roleFilter ||
+      prevFiltersRef.current.dateFrom !== dateFrom ||
+      prevFiltersRef.current.dateTo !== dateTo;
 
-    if (isFilterChange && currentPage !== 1) {
+    // Reset to page 1 only when filters change, not when they're just active
+    if (filtersChanged && currentPage !== 1) {
+      prevFiltersRef.current = { searchValue, statusFilter, roleFilter, dateFrom, dateTo };
       setCurrentPage(1);
       return;
     }
 
+    // Update the ref after checking
+    prevFiltersRef.current = { searchValue, statusFilter, roleFilter, dateFrom, dateTo };
+
     // Debounce search/filter changes, immediate for pagination
-    const shouldDebounce = isFilterChange;
+    const shouldDebounce = filtersChanged;
     const timer = setTimeout(
       () => {
         fetchData();
@@ -136,7 +155,7 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
     );
 
     return () => clearTimeout(timer);
-  }, [searchValue, statusFilter, roleFilter, currentPage, pageSize, fetchData]);
+  }, [searchValue, statusFilter, roleFilter, dateFrom, dateTo, currentPage, pageSize, fetchData]);
 
   return (
     <DataTable
@@ -154,7 +173,12 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
       roleFilter={roleFilter}
       onRoleFilterChange={setRoleFilter}
       roles={roles}
+      dateFrom={dateFrom}
+      dateTo={dateTo}
+      onDateFromChange={setDateFrom}
+      onDateToChange={setDateTo}
       isLoading={isLoading}
+      isExportLoading={isExportLoading}
       onReset={handleReset}
       onExport={handleExport}
     />

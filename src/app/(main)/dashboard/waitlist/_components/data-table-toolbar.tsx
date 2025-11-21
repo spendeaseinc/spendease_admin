@@ -1,55 +1,87 @@
 "use client";
 
-import { XCircle } from "lucide-react";
+import type { Table } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { CalendarIcon, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface DataTableToolbarProps {
+interface DataTableToolbarProps<TData> {
+  table?: Table<TData>;
   searchValue: string;
   onSearchChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  dateFrom: Date | undefined;
+  dateTo: Date | undefined;
+  onDateFromChange: (date: Date | undefined) => void;
+  onDateToChange: (date: Date | undefined) => void;
   onReset: () => void;
 }
 
-export function DataTableToolbar({
+export function DataTableToolbar<TData>({
   searchValue,
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
   onReset,
-}: DataTableToolbarProps) {
-  const isFiltered = searchValue !== "" || statusFilter !== "all";
+}: DataTableToolbarProps<TData>) {
+  const isFiltered = searchValue !== "" || statusFilter !== "all" || dateFrom !== undefined || dateTo !== undefined;
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-        <Input
-          placeholder="Search by email..."
-          value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="h-10 w-full sm:w-[300px]"
-        />
-        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className="h-10 w-full sm:w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        {isFiltered && (
-          <Button onClick={onReset} className="h-10 px-3">
-            Reset
-            <XCircle className="ml-2 h-4 w-4" />
+    <div className="flex flex-1 flex-col items-center gap-2 md:flex-row">
+      <Input
+        placeholder="Search customers..."
+        value={searchValue}
+        onChange={(event) => onSearchChange(event.target.value)}
+        className="h-9 w-full md:w-[200px] lg:w-[300px]"
+      />
+      <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+        <SelectTrigger className="h-9 w-full md:w-fit">
+          <SelectValue placeholder="Filter by status" />
+        </SelectTrigger>
+        <SelectContent className="bg-background">
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="approved">Approved</SelectItem>
+        </SelectContent>
+      </Select>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9 w-full justify-start text-left font-normal md:w-fit">
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateFrom ? format(dateFrom, "MMM dd, yyyy") : "Date from"}
           </Button>
-        )}
-      </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={dateFrom} onSelect={onDateFromChange} initialFocus />
+        </PopoverContent>
+      </Popover>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9 w-full justify-start text-left font-normal md:w-fit">
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateTo ? format(dateTo, "MMM dd, yyyy") : "Date to"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={dateTo} onSelect={onDateToChange} initialFocus />
+        </PopoverContent>
+      </Popover>
+      {isFiltered && (
+        <Button onClick={onReset} className="h-9 w-full px-2 md:w-fit lg:px-3">
+          Reset
+          <XCircle className="ml-2 h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Customer } from "@/lib/types";
@@ -10,6 +10,8 @@ interface CustomerProfileTabProps {
 }
 
 export function CustomerProfileTab({ customer }: CustomerProfileTabProps) {
+  const dateObj = parse(customer.meta.kyc.bvn.birthdate, "dd-MM-yyyy", new Date());
+
   return (
     <div className="space-y-6">
       <Card>
@@ -52,7 +54,7 @@ export function CustomerProfileTab({ customer }: CustomerProfileTabProps) {
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Date of birth</p>
-              <p className="font-medium">{format(customer.meta.kyc.bvn.birthdate, "MMMM dd, yyyy")}</p>
+              <p className="font-medium">{format(dateObj, "MMMM dd, yyyy")}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Marital status</p>
@@ -107,50 +109,6 @@ export function CustomerProfileTab({ customer }: CustomerProfileTabProps) {
             <div>
               <p className="text-muted-foreground text-sm">Country of Residence</p>
               <p className="font-medium">&quot;Not yet collecting&quot;</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Means of Identification</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-muted-foreground text-sm">ID type</p>
-              <p className="font-medium">BVN</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">ID number</p>
-              <p className="font-medium">{customer.meta.kyc.bvn.bvn}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Date issued</p>
-              <p className="font-medium">
-                {format(new Date(customer.meta.kyc.bvn.registration_date), "MMMM dd, yyyy")}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Expiry date</p>
-              <p className="font-medium">-</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">ID type</p>
-              <p className="font-medium">NIN</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">ID number</p>
-              <p className="font-medium">{customer.meta.kyc.nin.nin}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Date issued</p>
-              <p className="font-medium">-</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Expiry date</p>
-              <p className="font-medium">-</p>
             </div>
           </div>
         </CardContent>

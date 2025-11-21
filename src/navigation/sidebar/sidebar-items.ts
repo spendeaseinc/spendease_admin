@@ -1,4 +1,14 @@
-import { type LucideIcon, User, Users, WalletCards, BookCheck, Bell, CircleDollarSign, LayoutGrid } from "lucide-react";
+import {
+  type LucideIcon,
+  User,
+  Users,
+  WalletCards,
+  BookCheck,
+  Bell,
+  CircleDollarSign,
+  LayoutGrid,
+  PauseCircle,
+} from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -59,6 +69,11 @@ export const sidebarItems: NavGroup[] = [
         title: "Partner Balance",
         url: "/dashboard/partner-balance",
         icon: CircleDollarSign,
+      },
+      {
+        title: "Waitlist",
+        url: "/dashboard/waitlist",
+        icon: PauseCircle,
       },
       {
         title: "Notifications",

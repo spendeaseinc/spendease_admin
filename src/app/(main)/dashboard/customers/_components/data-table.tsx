@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { DownloadIcon, SlidersHorizontal } from "lucide-react";
+import { DownloadIcon, Loader2, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -45,7 +45,12 @@ interface DataTableProps<TData, TValue> {
   onSearchChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  dateFrom: Date | undefined;
+  dateTo: Date | undefined;
+  onDateFromChange: (date: Date | undefined) => void;
+  onDateToChange: (date: Date | undefined) => void;
   isLoading: boolean;
+  isExportLoading: boolean;
   onReset: () => void;
   onExport: () => void;
 }
@@ -62,7 +67,12 @@ export function DataTable<TData, TValue>({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
   isLoading,
+  isExportLoading,
   onReset,
   onExport,
 }: DataTableProps<TData, TValue>) {
@@ -91,7 +101,7 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <Card className="bg-transparent p-4 md:p-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <DataTableToolbar
           table={table}
@@ -99,12 +109,16 @@ export function DataTable<TData, TValue>({
           onSearchChange={onSearchChange}
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={onDateFromChange}
+          onDateToChange={onDateToChange}
           onReset={onReset}
         />
         <div className="hidden items-center space-x-2 md:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
+              <Button variant="outline" size="sm" className="h-9 bg-transparent">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 View
               </Button>
@@ -134,9 +148,20 @@ export function DataTable<TData, TValue>({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm" className="h-9" onClick={onExport}>
-            <DownloadIcon className="mr-2 h-4 w-4" />
-            Export
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 bg-transparent"
+            onClick={onExport}
+            disabled={isExportLoading}
+          >
+            {isExportLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <DownloadIcon className="mr-2 h-4 w-4" /> <span>Export</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -197,6 +222,6 @@ export function DataTable<TData, TValue>({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
-    </Card>
+    </div>
   );
 }

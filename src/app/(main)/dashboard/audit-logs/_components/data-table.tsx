@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { DownloadIcon, SlidersHorizontal } from "lucide-react";
+import { DownloadIcon, Loader2, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -47,7 +47,12 @@ interface DataTableProps<TData, TValue> {
   onEventFilterChange: (value: string) => void;
   actorFilter: string;
   onActorFilterChange: (value: string) => void;
+  dateFrom: Date | undefined;
+  onDateFromChange: (date: Date | undefined) => void;
+  dateTo: Date | undefined;
+  onDateToChange: (date: Date | undefined) => void;
   isLoading: boolean;
+  isExportLoading: boolean;
   onReset: () => void;
   onExport: () => void;
 }
@@ -66,7 +71,12 @@ export function DataTable<TData, TValue>({
   onEventFilterChange,
   actorFilter,
   onActorFilterChange,
+  dateFrom,
+  onDateFromChange,
+  dateTo,
+  onDateToChange,
   isLoading,
+  isExportLoading,
   onReset,
   onExport,
 }: DataTableProps<TData, TValue>) {
@@ -105,12 +115,17 @@ export function DataTable<TData, TValue>({
           onEventFilterChange={onEventFilterChange}
           actorFilter={actorFilter}
           onActorFilterChange={onActorFilterChange}
+          dateFrom={dateFrom}
+          onDateFromChange={onDateFromChange}
+          dateTo={dateTo}
+          onDateToChange={onDateToChange}
           onReset={onReset}
+          onExport={onExport}
         />
         <div className="hidden items-center space-x-2 md:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
+              <Button variant="outline" size="sm" className="h-9 bg-transparent">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 View
               </Button>
@@ -140,9 +155,20 @@ export function DataTable<TData, TValue>({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm" className="h-9" onClick={onExport}>
-            <DownloadIcon className="mr-2 h-4 w-4" />
-            Export
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 bg-transparent"
+            onClick={onExport}
+            disabled={isExportLoading}
+          >
+            {isExportLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <DownloadIcon className="mr-2 h-4 w-4" /> <span>Export</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
