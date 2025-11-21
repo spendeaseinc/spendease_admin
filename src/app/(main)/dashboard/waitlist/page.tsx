@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function WaitlistPage() {
-  const [result, statsResult] = await Promise.all([fetchWaitlist({ page: 1, limit: 10 }), fetchWaitlistStats()]);
+  const [result, statsResult] = await Promise.all([fetchWaitlist({ page: 1, pageSize: 10 }), fetchWaitlistStats()]);
 
   if ("success" in result) {
     if (result.unauthorized) {

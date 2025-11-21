@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function TeamsPage() {
-  const [result, rolesResult] = await Promise.all([fetchTeams({ page: 1, limit: 10 }), fetchRoles()]);
+  const [result, rolesResult] = await Promise.all([fetchTeams({ page: 1, pageSize: 10 }), fetchRoles()]);
 
   if ("success" in result) {
     if (result.unauthorized) {

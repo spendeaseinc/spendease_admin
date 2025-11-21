@@ -4,7 +4,7 @@
 import Link from "next/link";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ArrowUpDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,7 +82,7 @@ export const columns: ColumnDef<User>[] = [
       const date = new Date(row.getValue("createdAt"));
       return (
         <div className="flex flex-col">
-          <span className="text-sm">{date.toLocaleDateString()}</span>
+          <span className="text-sm">{format(date, "MMM dd, yyyy")}</span>
           <span className="text-muted-foreground text-xs">{formatDistanceToNow(date, { addSuffix: true })}</span>
         </div>
       );

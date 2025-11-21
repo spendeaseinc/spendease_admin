@@ -1,17 +1,20 @@
+/* eslint-disable react/no-array-index-key */
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 
 import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-  type SortingState,
-  type ColumnDef,
-  type VisibilityState,
 } from "@tanstack/react-table";
-import { DownloadIcon, SlidersHorizontal } from "lucide-react";
+import { DownloadIcon, Loader2, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,12 +40,17 @@ interface DataTableProps<TData, TValue> {
   currentPage: number;
   pageSize: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  dateFrom: Date | undefined;
+  dateTo: Date | undefined;
+  onDateFromChange: (date: Date | undefined) => void;
+  onDateToChange: (date: Date | undefined) => void;
   isLoading: boolean;
+  isExportLoading: boolean;
   onReset: () => void;
   onExport: () => void;
 }
@@ -59,43 +67,58 @@ export function DataTable<TData, TValue>({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
   isLoading,
+  isExportLoading,
   onReset,
   onExport,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState({});
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
+      columnFilters,
       columnVisibility,
     },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(totalItems / pageSize),
   });
 
   return (
-    <Card className="bg-transparent p-4 md:p-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <DataTableToolbar
+          table={table}
           searchValue={searchValue}
           onSearchChange={onSearchChange}
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={onDateFromChange}
+          onDateToChange={onDateToChange}
           onReset={onReset}
         />
         <div className="hidden items-center space-x-2 md:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
+              <Button variant="outline" size="sm" className="h-9 bg-transparent">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 View
               </Button>
@@ -125,13 +148,24 @@ export function DataTable<TData, TValue>({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm" className="h-9" onClick={onExport}>
-            <DownloadIcon className="mr-2 h-4 w-4" />
-            Export
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 bg-transparent"
+            onClick={onExport}
+            disabled={isExportLoading}
+          >
+            {isExportLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <DownloadIcon className="mr-2 h-4 w-4" /> <span>Export</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
-      <div className="mt-4 rounded-md border">
+      <Card className="rounded-lg bg-transparent py-0">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -154,11 +188,10 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {isLoading ? (
               Array.from({ length: pageSize }).map((_, index) => (
-                // eslint-disable-next-line react/no-array-index-key
-                <TableRow key={index}>
-                  {table.getVisibleFlatColumns().map((column) => (
-                    <TableCell key={column.id}>
-                      <Skeleton className="h-6 w-full" />
+                <TableRow key={`skeleton-${index}`}>
+                  {table.getVisibleLeafColumns().map((column) => (
+                    <TableCell key={`${column.id}-${index}`}>
+                      <Skeleton className="h-10 w-full" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -167,20 +200,22 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell className="py-2" key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No waitlist entries found.
+                  No results found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       <DataTablePagination
         table={table}
         totalItems={totalItems}
@@ -189,6 +224,6 @@ export function DataTable<TData, TValue>({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
-    </Card>
+    </div>
   );
 }

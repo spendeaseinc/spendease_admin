@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState, useRef } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { format } from "date-fns";
 import { toast } from "sonner";
 
-import { fetchWaitlist } from "@/app/actions/waitlist";
+import { fetchWaitlist, exportWaitlist } from "@/app/actions/waitlist";
 import type { WaitlistEntry } from "@/lib/types";
 
 import { columns } from "./columns";
@@ -29,9 +30,13 @@ export function WaitlistClient({ initialData, initialPagination }: WaitlistClien
   const [pageSize, setPageSize] = useState(initialPagination.pageSize);
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExportLoading, setIsExportLoading] = useState(false);
 
   const isFetchingRef = useRef(false);
+  const prevFiltersRef = useRef({ searchValue, statusFilter, dateFrom, dateTo });
 
   const fetchData = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -41,9 +46,11 @@ export function WaitlistClient({ initialData, initialPagination }: WaitlistClien
     try {
       const result = await fetchWaitlist({
         page: currentPage,
-        limit: pageSize,
-        email: searchValue || undefined,
+        pageSize: pageSize,
+        search: searchValue || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
       });
 
       if ("success" in result) {
@@ -65,59 +72,72 @@ export function WaitlistClient({ initialData, initialPagination }: WaitlistClien
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentPage, pageSize, searchValue, statusFilter, router]);
+  }, [currentPage, pageSize, searchValue, statusFilter, dateFrom, dateTo, router]);
 
   const handleReset = useCallback(() => {
     setSearchValue("");
     setStatusFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setCurrentPage(1);
   }, []);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     try {
-      const headers = ["ID", "Email", "Status", "Created At", "Updated At"];
-      const csvRows = [
-        headers.join(","),
-        ...data.map((entry) => {
-          const row = [
-            `"${entry.id}"`,
-            `"${entry.email}"`,
-            `"${entry.status}"`,
-            `"${new Date(entry.createdAt).toLocaleString()}"`,
-            `"${new Date(entry.updatedAt).toLocaleString()}"`,
-          ];
-          return row.join(",");
-        }),
-      ];
+      setIsExportLoading(true);
+      const result = await exportWaitlist({
+        search: searchValue || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+      });
 
-      const csvContent = csvRows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      if ("success" in result) {
+        if (result.unauthorized) {
+          toast.error("Please log in to export waitlist.");
+          router.push("/login");
+        } else {
+          toast.error(result.message);
+        }
+        return;
+      }
+
+      const url = URL.createObjectURL(result);
       const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-
-      link.setAttribute("href", url);
-      link.setAttribute("download", `waitlist-${new Date().toISOString().split("T")[0]}.csv`);
-      link.style.visibility = "hidden";
+      link.href = url;
+      link.download = `waitlist-${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${data.length} waitlist entries to CSV`);
+      toast.success("Waitlist exported successfully");
     } catch (error) {
-      console.error("Error exporting data:", error);
-      toast.error("Error exporting data");
+      console.error("Error exporting waitlist:", error);
+      toast.error("Error exporting waitlist");
+    } finally {
+      setIsExportLoading(false);
     }
-  }, [data]);
+  }, [searchValue, statusFilter, dateFrom, dateTo, router]);
 
   useEffect(() => {
-    const isFilterChange = searchValue || statusFilter !== "all";
+    const filtersChanged =
+      prevFiltersRef.current.searchValue !== searchValue ||
+      prevFiltersRef.current.statusFilter !== statusFilter ||
+      prevFiltersRef.current.dateFrom !== dateFrom ||
+      prevFiltersRef.current.dateTo !== dateTo;
 
-    if (isFilterChange && currentPage !== 1) {
+    // Reset to page 1 only when filters change, not when they're just active
+    if (filtersChanged && currentPage !== 1) {
+      prevFiltersRef.current = { searchValue, statusFilter, dateFrom, dateTo };
       setCurrentPage(1);
       return;
     }
 
-    const shouldDebounce = isFilterChange;
+    // Update the ref after checking
+    prevFiltersRef.current = { searchValue, statusFilter, dateFrom, dateTo };
+
+    const shouldDebounce = filtersChanged;
     const timer = setTimeout(
       () => {
         fetchData();
@@ -126,7 +146,7 @@ export function WaitlistClient({ initialData, initialPagination }: WaitlistClien
     );
 
     return () => clearTimeout(timer);
-  }, [searchValue, statusFilter, currentPage, pageSize, fetchData]);
+  }, [searchValue, statusFilter, dateFrom, dateTo, currentPage, pageSize, fetchData]);
 
   return (
     <DataTable
@@ -141,7 +161,12 @@ export function WaitlistClient({ initialData, initialPagination }: WaitlistClien
       onSearchChange={setSearchValue}
       statusFilter={statusFilter}
       onStatusFilterChange={setStatusFilter}
+      dateFrom={dateFrom}
+      dateTo={dateTo}
+      onDateFromChange={setDateFrom}
+      onDateToChange={setDateTo}
       isLoading={isLoading}
+      isExportLoading={isExportLoading}
       onReset={handleReset}
       onExport={handleExport}
     />

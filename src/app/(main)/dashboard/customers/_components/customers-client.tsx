@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState, useRef } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { format } from "date-fns";
 import { toast } from "sonner";
 
-import { fetchUsers } from "@/app/actions/users";
+import { fetchUsers, exportUsers } from "@/app/actions/users";
 import type { User } from "@/lib/types";
 
 import { columns } from "./columns";
@@ -29,9 +30,13 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
   const [pageSize, setPageSize] = useState(initialPagination.pageSize);
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExportLoading, setIsExportLoading] = useState(false);
 
   const isFetchingRef = useRef(false);
+  const prevFiltersRef = useRef({ searchValue, statusFilter, dateFrom, dateTo });
 
   const fetchData = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -41,9 +46,11 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
     try {
       const result = await fetchUsers({
         page: currentPage,
-        limit: pageSize,
-        name: searchValue || undefined,
+        pageSize: pageSize,
+        search: searchValue || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
       });
 
       if ("success" in result) {
@@ -67,62 +74,72 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentPage, pageSize, searchValue, statusFilter, router]);
+  }, [currentPage, pageSize, searchValue, statusFilter, dateFrom, dateTo, router]);
 
   const handleReset = useCallback(() => {
     setSearchValue("");
     setStatusFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setCurrentPage(1);
   }, []);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     try {
-      const headers = ["ID", "Name", "Email", "Phone", "Status", "Created At"];
-      const csvRows = [
-        headers.join(","),
-        ...data.map((user) => {
-          const row = [
-            `"${user.id}"`,
-            `"${user.first_name} ${user.last_name}"`,
-            `"${user.email}"`,
-            `"${user.phone}"`,
-            `"${user.status}"`,
-            `"${new Date(user.created_at).toLocaleString()}"`,
-          ];
-          return row.join(",");
-        }),
-      ];
+      setIsExportLoading(true);
+      const result = await exportUsers({
+        search: searchValue || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+        dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+      });
 
-      const csvContent = csvRows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      if ("success" in result) {
+        if (result.unauthorized) {
+          toast.error("Please log in to export customers.");
+          router.push("/auth/login");
+        } else {
+          toast.error(result.message);
+        }
+        return;
+      }
+
+      // Create download link for the blob
+      const blob = result;
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-
-      link.setAttribute("href", url);
-      link.setAttribute("download", `customers-${new Date().toISOString().split("T")[0]}.csv`);
-      link.style.visibility = "hidden";
+      link.href = url;
+      link.setAttribute("download", `customers-${new Date().toISOString().split("T")[0]}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
+      window.URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${data.length} customer records to CSV`);
+      toast.success("Successfully exported customer data");
     } catch (error) {
       console.error("Error exporting data:", error);
       toast.error("Error exporting data");
+    } finally {
+      setIsExportLoading(false);
     }
-  }, [data]);
+  }, [searchValue, statusFilter, dateFrom, dateTo, router]);
 
   useEffect(() => {
-    // Reset to page 1 when filters change
-    const isFilterChange = searchValue || statusFilter !== "all";
+    const filtersChanged =
+      prevFiltersRef.current.searchValue !== searchValue ||
+      prevFiltersRef.current.statusFilter !== statusFilter ||
+      prevFiltersRef.current.dateFrom !== dateFrom ||
+      prevFiltersRef.current.dateTo !== dateTo;
 
-    if (isFilterChange && currentPage !== 1) {
+    if (filtersChanged && currentPage !== 1) {
+      prevFiltersRef.current = { searchValue, statusFilter, dateFrom, dateTo };
       setCurrentPage(1);
       return;
     }
 
-    // Debounce search/filter changes, immediate for pagination
-    const shouldDebounce = isFilterChange;
+    prevFiltersRef.current = { searchValue, statusFilter, dateFrom, dateTo };
+
+    const shouldDebounce = filtersChanged;
     const timer = setTimeout(
       () => {
         fetchData();
@@ -131,7 +148,7 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
     );
 
     return () => clearTimeout(timer);
-  }, [searchValue, statusFilter, currentPage, pageSize, fetchData]);
+  }, [searchValue, statusFilter, dateFrom, dateTo, currentPage, pageSize, fetchData]);
 
   return (
     <DataTable
@@ -146,7 +163,12 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
       onSearchChange={setSearchValue}
       statusFilter={statusFilter}
       onStatusFilterChange={setStatusFilter}
+      dateFrom={dateFrom}
+      dateTo={dateTo}
+      onDateFromChange={setDateFrom}
+      onDateToChange={setDateTo}
       isLoading={isLoading}
+      isExportLoading={isExportLoading}
       onReset={handleReset}
       onExport={handleExport}
     />

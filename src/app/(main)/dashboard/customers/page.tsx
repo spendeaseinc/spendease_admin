@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CustomersPage() {
-  const [result, statsResult] = await Promise.all([fetchUsers({ page: 1, limit: 10 }), fetchUserStats()]);
+  const [result, statsResult] = await Promise.all([fetchUsers({ page: 1, pageSize: 10 }), fetchUserStats()]);
 
   if ("success" in result) {
     if (result.unauthorized) {
