@@ -7,13 +7,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { updateThemeMode, updateFontFamily } from "@/lib/theme-utils";
 import { cn } from "@/lib/utils";
+import { setValueToCookie } from "@/server/server-actions";
+import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
+import type { FontFamily } from "@/types/preferences/theme";
 
 type SettingsSection = "profile" | "appearance" | "security";
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
-  const [selectedTheme, setSelectedTheme] = useState<"light" | "dark">("light");
+  const themeMode = usePreferencesStore((s) => s.themeMode);
+  const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
+  const fontFamily = usePreferencesStore((s) => s.fontFamily);
+  const setFontFamily = usePreferencesStore((s) => s.setFontFamily);
+
+  const handleThemeChange = async () => {
+    const newTheme = themeMode === "dark" ? "light" : "dark";
+    updateThemeMode(newTheme);
+    setThemeMode(newTheme);
+    await setValueToCookie("theme_mode", newTheme);
+  };
+
+  const handleFontChange = async (font: FontFamily) => {
+    updateFontFamily(font);
+    setFontFamily(font);
+    await setValueToCookie("font_family", font);
+  };
 
   return (
     <div className="space-y-6">
@@ -111,14 +131,16 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="font">Font</Label>
-                  <Select defaultValue="inter">
+                  <Select value={fontFamily} onValueChange={handleFontChange}>
                     <SelectTrigger id="font">
                       <SelectValue placeholder="Select a font" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="inter">Inter</SelectItem>
+                      <SelectItem value="geist">Geist</SelectItem>
+                      <SelectItem value="geistsans">Geist Sans</SelectItem>
+                      <SelectItem value="geistmono">Geist Mono</SelectItem>
                       <SelectItem value="roboto">Roboto</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-muted-foreground text-xs">Set the font you want to use in the dashboard.</p>
@@ -129,10 +151,10 @@ export default function SettingsPage() {
                   <p className="text-muted-foreground text-xs">Select the theme for the dashboard.</p>
                   <div className="grid grid-cols-2 gap-4">
                     <button
-                      onClick={() => setSelectedTheme("light")}
+                      onClick={() => handleThemeChange()}
                       className={cn(
                         "relative rounded-lg border-2 p-4 transition-colors",
-                        selectedTheme === "light" ? "border-primary" : "border-muted hover:border-muted-foreground/50",
+                        themeMode === "light" ? "border-primary" : "border-muted hover:border-muted-foreground/50",
                       )}
                     >
                       <div className="space-y-2">
@@ -158,10 +180,10 @@ export default function SettingsPage() {
                     </button>
 
                     <button
-                      onClick={() => setSelectedTheme("dark")}
+                      onClick={() => handleThemeChange()}
                       className={cn(
                         "relative rounded-lg border-2 p-4 transition-colors",
-                        selectedTheme === "dark" ? "border-primary" : "border-muted hover:border-muted-foreground/50",
+                        themeMode === "dark" ? "border-primary" : "border-muted hover:border-muted-foreground/50",
                       )}
                     >
                       <div className="space-y-2">
@@ -187,8 +209,6 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </div>
-
-                <Button>Update preferences</Button>
               </div>
             </div>
           )}

@@ -15,8 +15,8 @@ export default function proxy(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
   // If accessing an auth route while authenticated, redirect to dashboard home
   if (isAuthRoute && accessToken) {
-    const ddashboardUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(ddashboardUrl);
+    const dashboardUrl = new URL("/dashboard/default", request.url);
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();

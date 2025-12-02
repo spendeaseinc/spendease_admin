@@ -1,31 +1,55 @@
 "use client";
 
-import { createContext, useContext, useRef } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
-import { useStore, type StoreApi } from "zustand";
+import { createStore, useStore, type StoreApi } from "zustand";
 
-import { createPreferencesStore, PreferencesState } from "./preferences-store";
+import type { ThemeMode, ThemePreset, FontFamily } from "@/types/preferences/theme";
 
-const PreferencesStoreContext = createContext<StoreApi<PreferencesState> | null>(null);
+interface PreferencesState {
+  themeMode: ThemeMode;
+  themePreset: ThemePreset;
+  fontFamily: FontFamily;
+  setThemeMode: (themeMode: ThemeMode) => void;
+  setThemePreset: (themePreset: ThemePreset) => void;
+  setFontFamily: (fontFamily: FontFamily) => void;
+}
 
-export const PreferencesStoreProvider = ({
+type PreferencesStore = StoreApi<PreferencesState>;
+
+const PreferencesContext = createContext<PreferencesStore | null>(null);
+
+export interface PreferencesStoreProviderProps {
+  children: ReactNode;
+  themeMode: ThemeMode;
+  themePreset: ThemePreset;
+  fontFamily?: FontFamily;
+}
+
+export function PreferencesStoreProvider({
   children,
   themeMode,
   themePreset,
-}: {
-  children: React.ReactNode;
-  themeMode: PreferencesState["themeMode"];
-  themePreset: PreferencesState["themePreset"];
-}) => {
-  const storeRef = useRef<StoreApi<PreferencesState> | null>(null);
+  fontFamily = "inter",
+}: PreferencesStoreProviderProps) {
+  const [store] = useState(() =>
+    createStore<PreferencesState>((set) => ({
+      themeMode,
+      themePreset,
+      fontFamily,
+      setThemeMode: (themeMode) => set({ themeMode }),
+      setThemePreset: (themePreset) => set({ themePreset }),
+      setFontFamily: (fontFamily) => set({ fontFamily }),
+    })),
+  );
 
-  storeRef.current ??= createPreferencesStore({ themeMode, themePreset });
+  return <PreferencesContext.Provider value={store}>{children}</PreferencesContext.Provider>;
+}
 
-  return <PreferencesStoreContext.Provider value={storeRef.current}>{children}</PreferencesStoreContext.Provider>;
-};
-
-export const usePreferencesStore = <T,>(selector: (state: PreferencesState) => T): T => {
-  const store = useContext(PreferencesStoreContext);
-  if (!store) throw new Error("Missing PreferencesStoreProvider");
+export function usePreferencesStore<T>(selector: (state: PreferencesState) => T): T {
+  const store = useContext(PreferencesContext);
+  if (!store) {
+    throw new Error("usePreferencesStore must be used within PreferencesStoreProvider");
+  }
   return useStore(store, selector);
-};
+}
