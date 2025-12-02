@@ -1,24 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 "use client";
 
-import Link from "next/link";
-
 import type { ColumnDef } from "@tanstack/react-table";
 import { format, formatDistanceToNow } from "date-fns";
-import { ArrowUpDown, Eye } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowUpDown } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { User } from "@/lib/types";
-import { getStatusVariant } from "@/lib/utils";
 
 export const columns: ColumnDef<User>[] = [
-  {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <div className="font-mono text-sm">#{row.getValue("id")}</div>,
-  },
   {
     accessorKey: "first_name",
     header: ({ column }) => {
@@ -54,21 +44,6 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return (
-        <Badge variant={getStatusVariant(status)} className="font-medium capitalize">
-          {status}
-        </Badge>
-      );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
-  },
-  {
     accessorKey: "createdAt",
     header: ({ column }) => {
       return (
@@ -85,31 +60,6 @@ export const columns: ColumnDef<User>[] = [
           <span className="text-sm">{format(date, "MMM dd, yyyy")}</span>
           <span className="text-muted-foreground text-xs">{formatDistanceToNow(date, { addSuffix: true })}</span>
         </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const customerId = row.original.id;
-      const status = row.getValue("status") as string;
-
-      return status === "active" ? (
-        <Link href={`/dashboard/customers/${customerId}`}>
-          <Button variant="ghost" size="sm" className="flex items-center">
-            <Eye className="h-4 w-4" /> View
-          </Button>
-        </Link>
-      ) : (
-        <Button
-          onClick={() => toast.error("User hasn't completed KYC")}
-          variant="ghost"
-          size="sm"
-          className="flex items-center"
-        >
-          <Eye className="h-4 w-4" /> View
-        </Button>
       );
     },
   },
