@@ -67,6 +67,20 @@ export interface WaitlistApiResponse {
   };
 }
 
+export interface TransactionsApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    data: WalletTransaction[];
+    paging: PaginationData;
+    links: Array<{
+      href: string;
+      rel: string;
+      method: string;
+    }>;
+  };
+}
+
 // Data types
 
 export interface AuditLog {
@@ -239,6 +253,22 @@ export interface WaitlistEntry {
   id: number;
   email: string;
   status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WalletTransaction {
+  id: number;
+  reference: string;
+  user_id: number;
+  user: User | null;
+  currency: string;
+  amount: string;
+  type: string;
+  status: string;
+  description: string;
+  balance_before: string;
+  balance_after: string;
   createdAt: string;
   updatedAt: string;
 }

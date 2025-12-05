@@ -1,43 +1,52 @@
 "use server";
 
-import type { ApiError, ApiResponse, Customer } from "@/lib/types";
+import type { ApiError, ApiResponse } from "@/lib/types";
 import { adjustDateTo, buildQueryParams, handleApiResponse } from "@/lib/utils";
 import { getValueFromCookie } from "@/server/server-actions";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT;
 
-interface FetchUsersParams {
+interface FetchTransactionsParams {
   page?: number;
   pageSize?: number;
   search?: string;
-  name?: string;
+  currency?: string;
+  type?: string;
   status?: string;
-  sortBy?: string;
-  sortOrder?: string;
   dateFrom?: string;
   dateTo?: string;
-  createdAt?: string;
 }
 
-function buildExportQueryParams(params: FetchUsersParams, adjustedDateTo?: string): URLSearchParams {
+function buildExportQueryParams(params: FetchTransactionsParams, adjustedDateTo?: string): URLSearchParams {
   const queryParams = new URLSearchParams();
 
   queryParams.append("format", "excel");
 
-  const fieldsToExport = ["email", "first_name", "last_name", "username", "phone", "status", "createdAt"];
+  const fieldsToExport = [
+    "reference",
+    "user_id",
+    "currency",
+    "amount",
+    "type",
+    "status",
+    "description",
+    "balance_before",
+    "balance_after",
+    "createdAt",
+  ];
   fieldsToExport.forEach((field) => queryParams.append("fieldsToExport[]", field));
 
-  if (params.page) queryParams.append("page", params.page.toString());
   if (params.search) queryParams.append("search", params.search);
+  if (params.currency) queryParams.append("currency", params.currency);
+  if (params.type) queryParams.append("type", params.type);
   if (params.status) queryParams.append("status", params.status);
   if (params.dateFrom) queryParams.append("dateFrom", params.dateFrom);
   if (adjustedDateTo) queryParams.append("dateTo", adjustedDateTo);
-  if (params.createdAt) queryParams.append("createdAt", params.createdAt);
 
   return queryParams;
 }
 
-export async function fetchUsers(params: FetchUsersParams = {}): Promise<ApiResponse | ApiError> {
+export async function fetchTransactions(params: FetchTransactionsParams = {}): Promise<ApiResponse | ApiError> {
   try {
     const accessToken = await getValueFromCookie("accessToken");
 
@@ -54,14 +63,14 @@ export async function fetchUsers(params: FetchUsersParams = {}): Promise<ApiResp
     const queryString = buildQueryParams({
       page: params.page,
       search: params.search,
+      currency: params.currency,
+      type: params.type,
       status: params.status,
-      sortBy: params.sortBy,
-      sortOrder: params.sortOrder,
       dateFrom: params.dateFrom,
       dateTo: adjustedDateTo,
     });
 
-    const url = `${API_BASE_URL}/api/admin/users?${queryString}`;
+    const url = `${API_BASE_URL}/api/admin/transactions/wallet-transactions?${queryString}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -74,19 +83,20 @@ export async function fetchUsers(params: FetchUsersParams = {}): Promise<ApiResp
 
     return await handleApiResponse(response);
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("Error fetching transactions:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch users",
+      message: error instanceof Error ? error.message : "Failed to fetch transactions",
     };
   }
 }
 
-export async function fetchUserStats(): Promise<
+export async function fetchTransactionStats(): Promise<
   | {
       total: number;
-      active: number;
-      verified: number;
+      pending: number;
+      success: number;
+      failed: number;
     }
   | ApiError
 > {
@@ -101,7 +111,7 @@ export async function fetchUserStats(): Promise<
       };
     }
 
-    const url = `${API_BASE_URL}/api/admin/users`;
+    const url = `${API_BASE_URL}/api/admin/transactions/wallet-transactions`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -118,7 +128,7 @@ export async function fetchUserStats(): Promise<
       return result;
     }
 
-    const activeResponse = await fetch(`${url}?status=active`, {
+    const pendingResponse = await fetch(`${url}?status=pending`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -127,13 +137,9 @@ export async function fetchUserStats(): Promise<
       cache: "no-store",
     });
 
-    const activeResult = await handleApiResponse(activeResponse);
+    const pendingResult = await handleApiResponse(pendingResponse);
 
-    if ("success" in activeResult) {
-      return activeResult;
-    }
-
-    const verifiedResponse = await fetch(`${url}?status=verified`, {
+    const successResponse = await fetch(`${url}?status=success`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -142,72 +148,47 @@ export async function fetchUserStats(): Promise<
       cache: "no-store",
     });
 
-    const verifiedResult = await handleApiResponse(verifiedResponse);
+    const successResult = await handleApiResponse(successResponse);
 
-    if ("success" in verifiedResult) {
-      return verifiedResult;
-    }
+    const failedResponse = await fetch(`${url}?status=failed`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
 
-    // Calculate stats from the response
-    const users = result.data.data;
-    const total = result.data.paging.total_items || users.length;
-    const active = activeResult.data.paging.total_items;
-    const verified = verifiedResult.data.paging.total_items;
+    const failedResult = await handleApiResponse(failedResponse);
 
-    return {
-      total,
-      active,
-      verified,
-    };
-  } catch (error) {
-    console.error("Error fetching user stats:", error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch user stats",
-    };
-  }
-}
-
-export async function fetchCustomerById(id: string): Promise<Customer | ApiError> {
-  try {
-    const accessToken = await getValueFromCookie("accessToken");
-
-    if (!accessToken) {
+    if ("success" in pendingResult || "success" in successResult || "success" in failedResult) {
       return {
         success: false,
-        message: "Authentication required",
-        unauthorized: true,
+        message: "Failed to fetch transaction stats",
       };
     }
 
-    const url = `${API_BASE_URL}/api/admin/users/${id}`;
+    const total = result.data.paging.total_items;
+    const pending = pendingResult.data.paging.total_items;
+    const success = successResult.data.paging.total_items;
+    const failed = failedResult.data.paging.total_items;
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
-
-    const result = await handleApiResponse(response);
-
-    if ("success" in result) {
-      return result;
-    }
-
-    return result.data as any;
+    return {
+      total,
+      pending,
+      success,
+      failed,
+    };
   } catch (error) {
-    console.error("Error fetching customer:", error);
+    console.error("Error fetching transaction stats:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch customer",
+      message: error instanceof Error ? error.message : "Failed to fetch transaction stats",
     };
   }
 }
 
-export async function exportUsers(params: FetchUsersParams = {}): Promise<Blob | ApiError> {
+export async function exportTransactions(params: FetchTransactionsParams = {}): Promise<Blob | ApiError> {
   try {
     const accessToken = await getValueFromCookie("accessToken");
 
@@ -221,7 +202,7 @@ export async function exportUsers(params: FetchUsersParams = {}): Promise<Blob |
 
     const adjustedDateTo = adjustDateTo(params.dateTo);
     const queryParams = buildExportQueryParams(params, adjustedDateTo);
-    const url = `${API_BASE_URL}/api/admin/users?${queryParams.toString()}`;
+    const url = `${API_BASE_URL}/api/admin/transactions/wallet-transactions?${queryParams.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -234,16 +215,16 @@ export async function exportUsers(params: FetchUsersParams = {}): Promise<Blob |
     if (!response.ok) {
       return {
         success: false,
-        message: "Failed to export users",
+        message: "Failed to export transactions",
       };
     }
 
     return await response.blob();
   } catch (error) {
-    console.error("Error exporting users:", error);
+    console.error("Error exporting transactions:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to export users",
+      message: error instanceof Error ? error.message : "Failed to export transactions",
     };
   }
 }
