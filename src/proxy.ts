@@ -1,24 +1,29 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export default function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = [
-    "/dashboard/audit-logs",
-    "/dashboard/customers",
-    "/dashboard/teams",
-    "/dashboard/transactions",
-    "/dashboard/waitlist",
-    "/dashboard/partner-balance",
-    "/dashboard/settings",
-  ];
+  const publicRoutes = ["/auth/login", "/auth/reset-password", "/auth/signup"];
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+
+  const protectedRoutes = ["/dashboard"];
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
-  // If accessing a protected route without authentication, redirect to root
+  if (accessToken && isPublicRoute) {
+    return NextResponse.redirect(new URL("/dashboard/default", request.url));
+  }
+
   if (isProtectedRoute && !accessToken) {
-    const homeUrl = new URL("/auth/login", request.url);
-    return NextResponse.redirect(homeUrl);
+    return NextResponse.redirect(new URL("/auth/login", request.url));
+  }
+
+  if (pathname === "/") {
+    if (accessToken) {
+      return NextResponse.redirect(new URL("/dashboard/default", request.url));
+    } else {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
   }
 
   return NextResponse.next();

@@ -2,7 +2,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ArrowUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: "phone",
     header: "Phone",
     cell: ({ row }) => {
-      return <div className="font-mono text-sm">{row.getValue("phone")}</div>;
+      return <div className="text-sm">{row.getValue("phone")}</div>;
     },
   },
   {
@@ -58,7 +58,6 @@ export const columns: ColumnDef<User>[] = [
       return (
         <div className="flex flex-col">
           <span className="text-sm">{format(date, "MMM dd, yyyy")}</span>
-          <span className="text-muted-foreground text-xs">{formatDistanceToNow(date, { addSuffix: true })}</span>
         </div>
       );
     },

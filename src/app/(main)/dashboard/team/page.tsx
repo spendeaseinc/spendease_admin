@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { fetchTeams, fetchRoles } from "@/app/actions/teams";
 
@@ -14,9 +13,6 @@ export default async function TeamsPage() {
   const [result, rolesResult] = await Promise.all([fetchTeams({ page: 1, pageSize: 10 }), fetchRoles()]);
 
   if ("success" in result) {
-    if (result.unauthorized) {
-      redirect("/auth/login");
-    }
     return (
       <div className="container mx-auto py-10">
         <div className="mb-8">

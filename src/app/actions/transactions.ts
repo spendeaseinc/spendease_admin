@@ -24,14 +24,17 @@ function buildExportQueryParams(params: FetchTransactionsParams, adjustedDateTo?
 
   const fieldsToExport = [
     "reference",
-    "user_id",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
     "currency",
     "amount",
     "type",
     "status",
     "description",
-    "balance_before",
-    "balance_after",
+    "previous_balance",
+    "current_balance",
     "createdAt",
   ];
   fieldsToExport.forEach((field) => queryParams.append("fieldsToExport[]", field));

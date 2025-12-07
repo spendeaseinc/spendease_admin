@@ -292,3 +292,47 @@ export interface TransactionDetailResponse {
   message: string;
   data: WalletTransactionDetail;
 }
+
+export interface DashboardStats {
+  overview: {
+    totalUsers: number;
+    activeUsers: number;
+    transactingUsers: number;
+    totalTransactions: number;
+    successfulTransactions: number;
+    successRate: number;
+  };
+  transactionOverview: {
+    title: string;
+    subtitle: string;
+    data: Array<{
+      month: string;
+      count: number;
+    }>;
+  };
+  customersComparison: {
+    title: string;
+    data: Array<{
+      date: string;
+      totalCustomers: number;
+      transactingCustomers: number;
+    }>;
+  };
+  newCustomers: {
+    title: string;
+    currentMonth: number;
+    previousMonth: number;
+    percentageChange: number;
+    data: Array<{
+      month: string;
+      count: number;
+    }>;
+  };
+}
+
+export interface DashboardStatsResponse {
+  status: boolean;
+  message: string;
+  // eslint-disable-next-line max-lines
+  data: DashboardStats;
+}

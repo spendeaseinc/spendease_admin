@@ -8,12 +8,12 @@ import { toast } from "sonner";
 
 import { fetchUsers } from "@/app/actions/users";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User } from "@/lib/types";
+import type { User } from "@/lib/types";
 
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 
-interface CustomersClientProps {
+interface DashboardCustomersTableProps {
   initialData: User[];
   initialPagination: {
     totalItems: number;
@@ -22,7 +22,7 @@ interface CustomersClientProps {
   };
 }
 
-export function CustomersTable({ initialData, initialPagination }: CustomersClientProps) {
+export function DashboardCustomersTable({ initialData, initialPagination }: DashboardCustomersTableProps) {
   const router = useRouter();
   const [data, setData] = useState<User[]>(initialData);
   const [totalItems, setTotalItems] = useState(initialPagination.totalItems);
@@ -49,17 +49,15 @@ export function CustomersTable({ initialData, initialPagination }: CustomersClie
       if ("success" in result) {
         if (result.unauthorized) {
           toast.error("Please log in to view customers.");
-          router.push("/auth/login");
+          router.push("/");
         } else {
           toast.error(result.message);
         }
         return;
       }
 
-      const customers = result;
-
-      setData(customers.data.data);
-      setTotalItems(customers.data.paging.total_items);
+      setData(result.data.data);
+      setTotalItems(result.data.paging.total_items);
     } catch (error) {
       console.error("Error fetching customers:", error);
       toast.error("Error fetching customers");
@@ -99,7 +97,7 @@ export function CustomersTable({ initialData, initialPagination }: CustomersClie
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Customers</CardTitle>
+        <CardTitle>Recent Customers</CardTitle>
       </CardHeader>
       <CardContent>
         <DataTable

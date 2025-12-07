@@ -103,7 +103,7 @@ export function DataTableToolbar<TData>({
         </PopoverContent>
       </Popover>
       {isFiltered && (
-        <Button onClick={onReset} className="h-8 px-2 lg:px-3">
+        <Button onClick={onReset} className="h-9 w-full px-2 md:w-fit lg:px-3">
           Reset
           <XCircle className="ml-2 h-4 w-4" />
         </Button>

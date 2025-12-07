@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { fetchTransactions, fetchTransactionStats } from "@/app/actions/transactions";
 
@@ -18,9 +17,6 @@ export default async function TransactionsPage() {
   ]);
 
   if ("success" in result) {
-    if (result.unauthorized) {
-      redirect("/auth/login");
-    }
     return (
       <div className="container mx-auto py-10">
         <div className="mb-8">
