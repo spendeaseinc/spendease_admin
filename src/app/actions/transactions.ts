@@ -1,6 +1,6 @@
 "use server";
 
-import type { ApiError, ApiResponse } from "@/lib/types";
+import type { ApiError, ApiResponse, TransactionDetailResponse, WalletTransactionDetail } from "@/lib/types";
 import { adjustDateTo, buildQueryParams, handleApiResponse } from "@/lib/utils";
 import { getValueFromCookie } from "@/server/server-actions";
 
@@ -95,7 +95,7 @@ export async function fetchTransactionStats(): Promise<
   | {
       total: number;
       pending: number;
-      success: number;
+      successful: number;
       failed: number;
     }
   | ApiError
@@ -170,13 +170,13 @@ export async function fetchTransactionStats(): Promise<
 
     const total = result.data.paging.total_items;
     const pending = pendingResult.data.paging.total_items;
-    const success = successResult.data.paging.total_items;
+    const successful = successResult.data.paging.total_items;
     const failed = failedResult.data.paging.total_items;
 
     return {
       total,
       pending,
-      success,
+      successful,
       failed,
     };
   } catch (error) {
@@ -225,6 +225,55 @@ export async function exportTransactions(params: FetchTransactionsParams = {}): 
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to export transactions",
+    };
+  }
+}
+
+export async function fetchTransactionById(id: number): Promise<WalletTransactionDetail | ApiError> {
+  try {
+    const accessToken = await getValueFromCookie("accessToken");
+
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Authentication required",
+        unauthorized: true,
+      };
+    }
+
+    const url = `${API_BASE_URL}/api/admin/transactions/wallet-transaction/${id}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: "Failed to fetch transaction details",
+      };
+    }
+
+    const result: TransactionDetailResponse = await response.json();
+
+    if (!result.status) {
+      return {
+        success: false,
+        message: result.message || "Failed to fetch transaction details",
+      };
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error fetching transaction details:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch transaction details",
     };
   }
 }

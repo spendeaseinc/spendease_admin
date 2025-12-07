@@ -11,6 +11,7 @@ import { SectionCards } from "./_components/section-cards";
 import { TransactionOverview } from "./_components/transaction-overview";
 import { TransactionsCards } from "./_components/transactions-cards";
 import { TransactionsChart } from "./_components/transactions-chart";
+import DashboardTransactionsTable from "./_components/transactions-table";
 
 export const metadata: Metadata = {
   title: "Home - SpendEase Admin Dashboard",
@@ -71,6 +72,7 @@ export default async function Page() {
         <TabsContent className="flex flex-col gap-4 md:gap-6" value="transactions">
           <TransactionsCards />
           <TransactionsChart />
+          <DashboardTransactionsTable />
         </TabsContent>
       </Tabs>
     </div>

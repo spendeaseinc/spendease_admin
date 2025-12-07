@@ -3,14 +3,14 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Eye } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { WalletTransaction } from "@/lib/types";
 import { getStatusVariant } from "@/lib/utils";
 
-export const columns: ColumnDef<WalletTransaction>[] = [
+export const createColumns = (onViewDetails: (id: number) => void): ColumnDef<WalletTransaction>[] => [
   {
     accessorKey: "reference",
     header: ({ column }) => {
@@ -129,6 +129,17 @@ export const columns: ColumnDef<WalletTransaction>[] = [
     cell: ({ row }) => {
       const date = new Date(row.getValue("created_at"));
       return <div>{format(date, "MMM dd, yyyy HH:mm")}</div>;
+    },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      return (
+        <Button variant="ghost" size="icon" onClick={() => onViewDetails(row.original.id)} className="h-8 w-8">
+          <Eye className="h-4 w-4" />
+        </Button>
+      );
     },
   },
 ];

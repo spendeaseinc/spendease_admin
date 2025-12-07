@@ -261,7 +261,10 @@ export interface WalletTransaction {
   id: number;
   reference: string;
   user_id: number;
-  user: User | null;
+  user?: {
+    first_name: string;
+    last_name: string;
+  };
   currency: string;
   amount: string;
   type: string;
@@ -269,6 +272,23 @@ export interface WalletTransaction {
   description: string;
   balance_before: string;
   balance_after: string;
-  createdAt: string;
+  created_at: string;
   updatedAt: string;
+}
+
+export interface WalletTransactionDetail extends WalletTransaction {
+  session_id?: string;
+  transaction_id?: string;
+  wallet_type?: string;
+  account_number?: string;
+  beneficiary_name?: string;
+  beneficiary_account?: string;
+  beneficiary_bank?: string;
+  payment_reason?: string;
+}
+
+export interface TransactionDetailResponse {
+  status: boolean;
+  message: string;
+  data: WalletTransactionDetail;
 }

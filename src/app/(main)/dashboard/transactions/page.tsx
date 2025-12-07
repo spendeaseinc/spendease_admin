@@ -34,7 +34,7 @@ export default async function TransactionsPage() {
 
   const transactions = result;
 
-  const stats = "success" in statsResult ? { total: 0, pending: 0, success: 0, failed: 0 } : statsResult;
+  const stats = "success" in statsResult ? { total: 0, pending: 0, successful: 0, failed: 0 } : statsResult;
 
   return (
     <div className="container mx-auto">
@@ -42,7 +42,7 @@ export default async function TransactionsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
         <p className="text-muted-foreground">View and manage all wallet transactions</p>
       </div>
-      <StatsCards total={stats.total} pending={stats.pending} success={stats.success} failed={stats.failed} />
+      <StatsCards total={stats.total} pending={stats.pending} successful={stats.successful} failed={stats.failed} />
       <TransactionsClient
         initialData={transactions.data.data}
         initialPagination={{

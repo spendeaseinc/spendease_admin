@@ -56,7 +56,7 @@ export function CustomersClient({ initialData, initialPagination }: CustomersCli
       if ("success" in result) {
         if (result.unauthorized) {
           toast.error("Please log in to view customers.");
-          router.push("/login");
+          router.push("/auth/login");
         } else {
           toast.error(result.message);
         }

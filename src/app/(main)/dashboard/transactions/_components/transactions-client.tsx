@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import { fetchTransactions, exportTransactions } from "@/app/actions/transactions";
 import type { WalletTransaction } from "@/lib/types";
 
-import { columns } from "./columns";
+import { createColumns } from "./columns";
 import { DataTable } from "./data-table";
+import { TransactionDetailSheet } from "./transaction-detail-sheet";
 
 interface TransactionsClientProps {
   initialData: WalletTransaction[];
@@ -56,9 +57,18 @@ export function TransactionsClient({ initialData, initialPagination }: Transacti
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isExportLoading, setIsExportLoading] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const isFetchingRef = useRef(false);
   const prevFiltersRef = useRef({ searchValue, currencyFilter, typeFilter, statusFilter, dateFrom, dateTo });
+
+  const handleViewDetails = useCallback((id: number) => {
+    setSelectedTransactionId(id);
+    setIsSheetOpen(true);
+  }, []);
+
+  const columns = createColumns(handleViewDetails);
 
   const fetchData = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -82,7 +92,7 @@ export function TransactionsClient({ initialData, initialPagination }: Transacti
       if ("success" in result) {
         if (result.unauthorized) {
           toast.error("Please log in to view audit logs.");
-          router.push("/login");
+          router.push("/auth/login");
         } else {
           toast.error(result.message);
         }
@@ -180,30 +190,33 @@ export function TransactionsClient({ initialData, initialPagination }: Transacti
   }, [searchValue, currencyFilter, typeFilter, statusFilter, dateFrom, dateTo, currentPage, pageSize, fetchData]);
 
   return (
-    <DataTable
-      columns={columns}
-      data={data}
-      totalItems={totalItems}
-      currentPage={currentPage}
-      pageSize={pageSize}
-      onPageChange={setCurrentPage}
-      onPageSizeChange={setPageSize}
-      searchValue={searchValue}
-      onSearchChange={setSearchValue}
-      currencyFilter={currencyFilter}
-      onCurrencyFilterChange={setCurrencyFilter}
-      typeFilter={typeFilter}
-      onTypeFilterChange={setTypeFilter}
-      statusFilter={statusFilter}
-      onStatusFilterChange={setStatusFilter}
-      dateFrom={dateFrom}
-      dateTo={dateTo}
-      onDateFromChange={setDateFrom}
-      onDateToChange={setDateTo}
-      isLoading={isLoading}
-      isExportLoading={isExportLoading}
-      onReset={handleReset}
-      onExport={handleExport}
-    />
+    <>
+      <DataTable
+        columns={columns}
+        data={data}
+        totalItems={totalItems}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        currencyFilter={currencyFilter}
+        onCurrencyFilterChange={setCurrencyFilter}
+        typeFilter={typeFilter}
+        onTypeFilterChange={setTypeFilter}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        isLoading={isLoading}
+        isExportLoading={isExportLoading}
+        onReset={handleReset}
+        onExport={handleExport}
+      />
+      <TransactionDetailSheet transactionId={selectedTransactionId} open={isSheetOpen} onOpenChange={setIsSheetOpen} />
+    </>
   );
 }

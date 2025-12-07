@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface StatsCardsProps {
   total: number;
   pending: number;
-  success: number;
+  successful: number;
   failed: number;
 }
 
-export function StatsCards({ total, pending, success, failed }: StatsCardsProps) {
+export function StatsCards({ total, pending, successful, failed }: StatsCardsProps) {
   return (
     <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -36,7 +36,7 @@ export function StatsCards({ total, pending, success, failed }: StatsCardsProps)
           <CheckCircle className="text-muted-foreground h-4 w-4" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{success.toLocaleString()}</div>
+          <div className="text-2xl font-bold">{successful.toLocaleString()}</div>
         </CardContent>
       </Card>
       <Card>
