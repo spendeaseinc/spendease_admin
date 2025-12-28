@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { fetchAuditLogs } from "@/app/actions/audit-logs";
 
@@ -14,9 +13,6 @@ export default async function AuditLogsPage() {
   const result = await fetchAuditLogs({ page: 1, pageSize: 10 });
 
   if ("success" in result) {
-    if (result.unauthorized) {
-      redirect("/auth/login");
-    }
     return (
       <div className="container mx-auto py-10">
         <div className="flex min-h-[400px] items-center justify-center">

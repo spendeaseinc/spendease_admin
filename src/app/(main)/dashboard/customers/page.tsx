@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { fetchUsers, fetchUserStats } from "@/app/actions/users";
 
@@ -15,9 +14,6 @@ export default async function CustomersPage() {
   const [result, statsResult] = await Promise.all([fetchUsers({ page: 1, pageSize: 10 }), fetchUserStats()]);
 
   if ("success" in result) {
-    if (result.unauthorized) {
-      redirect("/auth/login");
-    }
     return (
       <div className="container mx-auto py-10">
         <div className="mb-8">

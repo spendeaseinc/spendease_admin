@@ -59,7 +59,7 @@ export function TeamsClient({ initialData, initialPagination, roles }: TeamsClie
       if ("success" in result) {
         if (result.unauthorized) {
           toast.error("Please log in to view teams.");
-          router.push("/login");
+          router.push("/auth/login");
         } else {
           toast.error(result.message);
         }

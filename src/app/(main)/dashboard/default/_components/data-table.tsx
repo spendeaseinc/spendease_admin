@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { DownloadIcon, Loader2, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,18 +43,8 @@ interface DataTableProps<TData, TValue> {
   onPageSizeChange: (pageSize: number) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  eventFilter: string;
-  onEventFilterChange: (value: string) => void;
-  actorFilter: string;
-  onActorFilterChange: (value: string) => void;
-  dateFrom: Date | undefined;
-  onDateFromChange: (date: Date | undefined) => void;
-  dateTo: Date | undefined;
-  onDateToChange: (date: Date | undefined) => void;
   isLoading: boolean;
-  isExportLoading: boolean;
   onReset: () => void;
-  onExport: () => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -67,18 +57,8 @@ export function DataTable<TData, TValue>({
   onPageSizeChange,
   searchValue,
   onSearchChange,
-  eventFilter,
-  onEventFilterChange,
-  actorFilter,
-  onActorFilterChange,
-  dateFrom,
-  onDateFromChange,
-  dateTo,
-  onDateToChange,
   isLoading,
-  isExportLoading,
   onReset,
-  onExport,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -107,26 +87,13 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <DataTableToolbar
-          table={table}
-          searchValue={searchValue}
-          onSearchChange={onSearchChange}
-          eventFilter={eventFilter}
-          onEventFilterChange={onEventFilterChange}
-          actorFilter={actorFilter}
-          onActorFilterChange={onActorFilterChange}
-          dateFrom={dateFrom}
-          onDateFromChange={onDateFromChange}
-          dateTo={dateTo}
-          onDateToChange={onDateToChange}
-          onReset={onReset}
-        />
+        <DataTableToolbar table={table} searchValue={searchValue} onSearchChange={onSearchChange} onReset={onReset} />
         <div className="hidden items-center space-x-2 md:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 bg-transparent">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
-                View
+                Columns
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-background w-[180px]">
@@ -154,21 +121,6 @@ export function DataTable<TData, TValue>({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 bg-transparent"
-            onClick={onExport}
-            disabled={isExportLoading}
-          >
-            {isExportLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <DownloadIcon className="mr-2 h-4 w-4" /> <span>Export</span>
-              </>
-            )}
-          </Button>
         </div>
       </div>
       <Card className="rounded-lg bg-transparent py-0">
@@ -206,7 +158,9 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell className="py-3" key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))

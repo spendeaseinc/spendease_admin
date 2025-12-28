@@ -31,16 +31,27 @@ export function formatToTitleCase(inputString: string) {
   return titleCaseString;
 }
 
-type StatusType = "active" | "pending" | "verified" | "unverified" | "locked" | "suspended" | "deleted";
+type StatusType =
+  | "active"
+  | "pending"
+  | "verified"
+  | "success"
+  | "unverified"
+  | "locked"
+  | "suspended"
+  | "deleted"
+  | "failed";
 
 const statusVariants: Record<StatusType, "default" | "primary" | "green" | "secondary" | "destructive" | "outline"> = {
   active: "primary",
   pending: "primary",
   verified: "green",
+  success: "green",
   unverified: "outline",
   locked: "destructive",
   suspended: "destructive",
   deleted: "destructive",
+  failed: "destructive",
 };
 
 export const getStatusVariant = (

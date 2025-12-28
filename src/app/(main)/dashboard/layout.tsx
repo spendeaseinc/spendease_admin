@@ -5,9 +5,9 @@ import { cookies } from "next/headers";
 import { Bell } from "lucide-react";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { getSession } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { users } from "@/data/users";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
 import {
@@ -29,6 +29,16 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
+  const session = await getSession();
+
+  const user = session?.user
+    ? {
+        name: `${session.user.first_name} ${session.user.last_name}`,
+        email: session.user.email,
+        avatar: undefined,
+      }
+    : null;
+
   const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
     getPreference<SidebarVariant>("sidebar_variant", SIDEBAR_VARIANT_VALUES, "sidebar"),
     getPreference<SidebarCollapsible>("sidebar_collapsible", SIDEBAR_COLLAPSIBLE_VALUES, "icon"),
@@ -38,7 +48,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
+      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} user={user} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(
@@ -63,10 +73,12 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             </div>
             <div className="flex items-center gap-2">
               <ThemeSwitcher />
+              {/*
               <Button variant="ghost" size="icon">
                 <Bell />
               </Button>
-              <AccountSwitcher users={users} />
+              */}
+              <AccountSwitcher user={user} />
             </div>
           </div>
         </header>

@@ -63,8 +63,6 @@ export async function fetchUsers(params: FetchUsersParams = {}): Promise<ApiResp
 
     const url = `${API_BASE_URL}/api/admin/users?${queryString}`;
 
-    console.log(url);
-
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -103,7 +101,6 @@ export async function fetchUserStats(): Promise<
       };
     }
 
-    // Fetch all users without pagination to calculate stats
     const url = `${API_BASE_URL}/api/admin/users`;
 
     const response = await fetch(url, {

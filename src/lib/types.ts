@@ -67,6 +67,20 @@ export interface WaitlistApiResponse {
   };
 }
 
+export interface TransactionsApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    data: WalletTransaction[];
+    paging: PaginationData;
+    links: Array<{
+      href: string;
+      rel: string;
+      method: string;
+    }>;
+  };
+}
+
 // Data types
 
 export interface AuditLog {
@@ -241,4 +255,84 @@ export interface WaitlistEntry {
   status: "pending" | "approved" | "rejected";
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WalletTransaction {
+  id: number;
+  reference: string;
+  user_id: number;
+  user?: {
+    first_name: string;
+    last_name: string;
+  };
+  currency: string;
+  amount: string;
+  type: string;
+  status: string;
+  description: string;
+  balance_before: string;
+  balance_after: string;
+  created_at: string;
+  updatedAt: string;
+}
+
+export interface WalletTransactionDetail extends WalletTransaction {
+  session_id?: string;
+  transaction_id?: string;
+  wallet_type?: string;
+  account_number?: string;
+  beneficiary_name?: string;
+  beneficiary_account?: string;
+  beneficiary_bank?: string;
+  payment_reason?: string;
+}
+
+export interface TransactionDetailResponse {
+  status: boolean;
+  message: string;
+  data: WalletTransactionDetail;
+}
+
+export interface DashboardStats {
+  overview: {
+    totalUsers: number;
+    activeUsers: number;
+    transactingUsers: number;
+    totalTransactions: number;
+    successfulTransactions: number;
+    successRate: number;
+  };
+  transactionOverview: {
+    title: string;
+    subtitle: string;
+    data: Array<{
+      month: string;
+      count: number;
+    }>;
+  };
+  customersComparison: {
+    title: string;
+    data: Array<{
+      date: string;
+      totalCustomers: number;
+      transactingCustomers: number;
+    }>;
+  };
+  newCustomers: {
+    title: string;
+    currentMonth: number;
+    previousMonth: number;
+    percentageChange: number;
+    data: Array<{
+      month: string;
+      count: number;
+    }>;
+  };
+}
+
+export interface DashboardStatsResponse {
+  status: boolean;
+  message: string;
+  // eslint-disable-next-line max-lines
+  data: DashboardStats;
 }

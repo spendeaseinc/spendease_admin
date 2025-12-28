@@ -1,18 +1,17 @@
-/* eslint-disable react/no-array-index-key */
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 
 import {
   type ColumnDef,
-  type ColumnFiltersState,
-  type SortingState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
+  type SortingState,
+  getSortedRowModel,
+  type ColumnFiltersState,
+  getFilteredRowModel,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import { DownloadIcon, Loader2, SlidersHorizontal } from "lucide-react";
 
@@ -43,13 +42,15 @@ interface DataTableProps<TData, TValue> {
   onPageSizeChange: (pageSize: number) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  eventFilter: string;
-  onEventFilterChange: (value: string) => void;
-  actorFilter: string;
-  onActorFilterChange: (value: string) => void;
+  currencyFilter: string;
+  onCurrencyFilterChange: (value: string) => void;
+  typeFilter: string;
+  onTypeFilterChange: (value: string) => void;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
   dateFrom: Date | undefined;
-  onDateFromChange: (date: Date | undefined) => void;
   dateTo: Date | undefined;
+  onDateFromChange: (date: Date | undefined) => void;
   onDateToChange: (date: Date | undefined) => void;
   isLoading: boolean;
   isExportLoading: boolean;
@@ -67,39 +68,40 @@ export function DataTable<TData, TValue>({
   onPageSizeChange,
   searchValue,
   onSearchChange,
-  eventFilter,
-  onEventFilterChange,
-  actorFilter,
-  onActorFilterChange,
+  currencyFilter,
+  onCurrencyFilterChange,
+  typeFilter,
+  onTypeFilterChange,
+  statusFilter,
+  onStatusFilterChange,
   dateFrom,
-  onDateFromChange,
   dateTo,
+  onDateFromChange,
   onDateToChange,
   isLoading,
   isExportLoading,
   onReset,
   onExport,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState({});
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
     },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(totalItems / pageSize),
   });
@@ -111,13 +113,15 @@ export function DataTable<TData, TValue>({
           table={table}
           searchValue={searchValue}
           onSearchChange={onSearchChange}
-          eventFilter={eventFilter}
-          onEventFilterChange={onEventFilterChange}
-          actorFilter={actorFilter}
-          onActorFilterChange={onActorFilterChange}
+          currencyFilter={currencyFilter}
+          onCurrencyFilterChange={onCurrencyFilterChange}
+          typeFilter={typeFilter}
+          onTypeFilterChange={onTypeFilterChange}
+          statusFilter={statusFilter}
+          onStatusFilterChange={onStatusFilterChange}
           dateFrom={dateFrom}
-          onDateFromChange={onDateFromChange}
           dateTo={dateTo}
+          onDateFromChange={onDateFromChange}
           onDateToChange={onDateToChange}
           onReset={onReset}
         />
@@ -174,30 +178,29 @@ export function DataTable<TData, TValue>({
       <Card className="rounded-lg bg-transparent py-0">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="bg-accent hover:bg-accent">
-                {headerGroup.headers.map((header, index) => {
-                  const isFirst = index === 0;
-                  const isLast = index === headerGroup.headers.length - 1;
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className={`${isFirst ? "rounded-tl-lg" : ""} ${isLast ? "rounded-tr-lg" : ""}`}
-                    >
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
+            <TableRow className="bg-accent hover:bg-accent">
+              {table.getHeaderGroups().map((headerGroup) =>
+                headerGroup.headers.map((header, index) => (
+                  <TableHead
+                    key={header.id}
+                    className={
+                      index === 0 ? "rounded-tl-lg" : index === headerGroup.headers.length - 1 ? "rounded-tr-lg" : ""
+                    }
+                  >
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                )),
+              )}
+            </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: pageSize }).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
+                // eslint-disable-next-line react/no-array-index-key
+                <TableRow key={index}>
                   {table.getVisibleLeafColumns().map((column) => (
-                    <TableCell key={`${column.id}-${index}`}>
-                      <Skeleton className="h-10 w-full" />
+                    <TableCell key={column.id}>
+                      <Skeleton className="h-6 w-full" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -213,7 +216,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results found.
+                  No results.
                 </TableCell>
               </TableRow>
             )}

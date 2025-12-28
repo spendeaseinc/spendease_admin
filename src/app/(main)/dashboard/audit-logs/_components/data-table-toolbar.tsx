@@ -23,7 +23,6 @@ interface DataTableToolbarProps<TData> {
   dateTo: Date | undefined;
   onDateToChange: (date: Date | undefined) => void;
   onReset: () => void;
-  onExport: () => void;
 }
 
 export function DataTableToolbar<TData>({

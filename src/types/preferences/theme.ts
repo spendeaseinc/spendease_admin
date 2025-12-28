@@ -55,3 +55,6 @@ export const THEME_PRESET_VALUES = THEME_PRESET_OPTIONS.map((p) => p.value);
 export type ThemePreset = (typeof THEME_PRESET_OPTIONS)[number]["value"];
 
 // --- generated:themePresets:end ---
+
+export const FONT_FAMILY_VALUES = ["inter", "geist", "geistmono", "geistsans", "roboto"] as const;
+export type FontFamily = (typeof FONT_FAMILY_VALUES)[number];

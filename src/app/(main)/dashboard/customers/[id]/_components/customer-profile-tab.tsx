@@ -30,7 +30,7 @@ export function CustomerProfileTab({ customer }: CustomerProfileTabProps) {
             </div>
             <div>
               <p className="text-muted-foreground text-sm capitalize!">Middle name</p>
-              <p className="font-medium">{customer.meta.kyc.bvn.middlename.toLowerCase()}</p>
+              <p className="font-medium">{"Level 1"}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Last name</p>
@@ -82,7 +82,7 @@ export function CustomerProfileTab({ customer }: CustomerProfileTabProps) {
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Level of Account</p>
-              <p className="font-medium">{customer.meta.kyc.bvn.level_of_account}</p>
+              <p className="font-medium">{"Level 1"}</p>
             </div>
           </div>
         </CardContent>

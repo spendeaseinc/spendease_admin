@@ -1,67 +1,118 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
+import { fetchUsers } from "@/app/actions/users";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import type { User } from "@/lib/types";
 
-const customers = [
-  { name: "Olivia Martin", email: "olivia.martin@email.com", amount: "+$1,999.00", initials: "ON" },
-  { name: "Jackson Lee", email: "jackson.lee@email.com", amount: "+$39.00", initials: "CN" },
-  { name: "Isabella Nguyen", email: "isabella.nguyen@email.com", amount: "+$299.00", initials: "CN" },
-  { name: "William Kim", email: "will@email.com", amount: "+$99.00", initials: "CN" },
-  { name: "Sofia Davis", email: "sofia.davis@email.com", amount: "+$39.00", initials: "CN" },
-];
+import { columns } from "./columns";
+import { DataTable } from "./data-table";
 
-export function CustomersTable() {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+interface DashboardCustomersTableProps {
+  initialData: User[];
+  initialPagination: {
+    totalItems: number;
+    currentPage: number;
+    pageSize: number;
+  };
+}
+
+export function DashboardCustomersTable({ initialData, initialPagination }: DashboardCustomersTableProps) {
+  const router = useRouter();
+  const [data, setData] = useState<User[]>(initialData);
+  const [totalItems, setTotalItems] = useState(initialPagination.totalItems);
+  const [currentPage, setCurrentPage] = useState(initialPagination.currentPage);
+  const [pageSize, setPageSize] = useState(initialPagination.pageSize);
+  const [searchValue, setSearchValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isFetchingRef = useRef(false);
+  const prevFiltersRef = useRef({ searchValue });
+
+  const fetchData = useCallback(async () => {
+    if (isFetchingRef.current) return;
+
+    isFetchingRef.current = true;
+    setIsLoading(true);
+    try {
+      const result = await fetchUsers({
+        page: currentPage,
+        pageSize: pageSize,
+        search: searchValue || undefined,
+      });
+
+      if ("success" in result) {
+        if (result.unauthorized) {
+          toast.error("Please log in to view customers.");
+          router.push("/");
+        } else {
+          toast.error(result.message);
+        }
+        return;
+      }
+
+      setData(result.data.data);
+      setTotalItems(result.data.paging.total_items);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      toast.error("Error fetching customers");
+    } finally {
+      setIsLoading(false);
+      isFetchingRef.current = false;
+    }
+  }, [currentPage, pageSize, searchValue, router]);
+
+  const handleReset = useCallback(() => {
+    setSearchValue("");
+    setCurrentPage(1);
+  }, []);
+
+  useEffect(() => {
+    const filtersChanged = prevFiltersRef.current.searchValue !== searchValue;
+
+    if (filtersChanged && currentPage !== 1) {
+      prevFiltersRef.current = { searchValue };
+      setCurrentPage(1);
+      return;
+    }
+
+    prevFiltersRef.current = { searchValue };
+
+    const shouldDebounce = filtersChanged;
+    const timer = setTimeout(
+      () => {
+        fetchData();
+      },
+      shouldDebounce ? 500 : 0,
+    );
+
+    return () => clearTimeout(timer);
+  }, [searchValue, currentPage, pageSize, fetchData]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Customers</CardTitle>
+        <CardTitle>Recent Customers</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-6 flex gap-2">
-          <Input placeholder="Filter emails..." className="flex-1" />
-          <Button variant="outline">
-            Columns <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="space-y-6">
-          {customers.map((customer, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium">
-                  {customer.initials}
-                </div>
-                <div>
-                  <div className="font-medium">{customer.name}</div>
-                  <div className="text-muted-foreground text-sm">{customer.email}</div>
-                </div>
-              </div>
-              <div className="font-medium">{customer.amount}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="border-border mt-6 flex items-center justify-between border-t pt-6">
-          <div className="text-muted-foreground text-sm">
-            {selectedRows.length} of {customers.length} row(s) selected.
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              Previous
-            </Button>
-            <Button variant="outline" size="sm">
-              Next
-            </Button>
-          </div>
-        </div>
+        <DataTable
+          columns={columns}
+          data={data}
+          totalItems={totalItems}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+          isLoading={isLoading}
+          onReset={handleReset}
+        />
       </CardContent>
     </Card>
   );
