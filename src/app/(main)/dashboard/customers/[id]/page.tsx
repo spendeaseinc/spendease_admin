@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { fetchCustomerById } from "@/app/actions/users";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,9 +23,6 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
   const result = await fetchCustomerById(id);
 
   if ("success" in result) {
-    if (result.unauthorized) {
-      redirect("/auth/login");
-    }
     return (
       <div className="container mx-auto py-10">
         <div className="text-center text-red-500">{result.message}</div>

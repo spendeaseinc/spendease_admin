@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
   // Base URL for the backend
-  BASE_URL: process.env.VITE_PUBLIC_ENDPOINT,
+  BASE_URL: process.env.NEXT_PUBLIC_ENDPOINT,
   // Auth endpoints
   AUTH: {
     VERIFY_OTP: "/api/admin/auth/two-fa/complete",

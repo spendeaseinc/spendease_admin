@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { fetchWaitlist, fetchWaitlistStats } from "@/app/actions/waitlist";
 
@@ -15,9 +14,6 @@ export default async function WaitlistPage() {
   const [result, statsResult] = await Promise.all([fetchWaitlist({ page: 1, pageSize: 10 }), fetchWaitlistStats()]);
 
   if ("success" in result) {
-    if (result.unauthorized) {
-      redirect("/auth/login");
-    }
     return (
       <div className="container mx-auto py-10">
         <div className="mb-8">

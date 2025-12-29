@@ -5,6 +5,11 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { LoginForm } from "../_components/login-form";
 
+export const metadata = {
+  title: "Login - SpendEase Admin",
+  description: "SpendEase Admin Login",
+};
+
 export default function LoginPage() {
   return (
     <div className="mx-auto flex w-full items-center justify-center sm:w-[450px]">

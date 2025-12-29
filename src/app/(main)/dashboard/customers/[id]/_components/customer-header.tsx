@@ -51,7 +51,7 @@ export function CustomerHeader({ customer }: CustomerHeaderProps) {
 
           <div className="text-right">
             <p className="text-muted-foreground text-sm">BVN Account Level</p>
-            <p className="text-lg font-semibold">{customer.meta.kyc.bvn.level_of_account ?? "Level 1"}</p>
+            <p className="text-lg font-semibold">{"Level 1"}</p>
           </div>
         </CardContent>
       </Card>

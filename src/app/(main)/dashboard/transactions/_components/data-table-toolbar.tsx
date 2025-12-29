@@ -9,18 +9,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { TeamMemberRole } from "@/lib/types";
-import { formatToTitleCase } from "@/lib/utils";
 
 interface DataTableToolbarProps<TData> {
-  table?: Table<TData>;
+  table: Table<TData>;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  currencyFilter: string;
+  onCurrencyFilterChange: (value: string) => void;
+  typeFilter: string;
+  onTypeFilterChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
-  roleFilter: string;
-  onRoleFilterChange: (value: string) => void;
-  roles: TeamMemberRole[];
   dateFrom: Date | undefined;
   dateTo: Date | undefined;
   onDateFromChange: (date: Date | undefined) => void;
@@ -31,11 +30,12 @@ interface DataTableToolbarProps<TData> {
 export function DataTableToolbar<TData>({
   searchValue,
   onSearchChange,
+  currencyFilter,
+  onCurrencyFilterChange,
+  typeFilter,
+  onTypeFilterChange,
   statusFilter,
   onStatusFilterChange,
-  roleFilter,
-  onRoleFilterChange,
-  roles,
   dateFrom,
   dateTo,
   onDateFromChange,
@@ -44,40 +44,63 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isFiltered =
     searchValue !== "" ||
+    currencyFilter !== "all" ||
+    typeFilter !== "all" ||
     statusFilter !== "all" ||
-    roleFilter !== "all" ||
     dateFrom !== undefined ||
     dateTo !== undefined;
 
   return (
     <div className="flex flex-1 flex-col items-center gap-2 md:flex-row">
       <Input
-        placeholder="Search by name or email..."
+        placeholder="Filter transactions..."
         value={searchValue}
         onChange={(event) => onSearchChange(event.target.value)}
         className="h-8 w-full md:w-[150px] lg:w-[250px]"
       />
+      <Select value={currencyFilter} onValueChange={onCurrencyFilterChange}>
+        <SelectTrigger className="h-8 w-full md:w-fit">
+          <SelectValue placeholder="Currency" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Currencies</SelectItem>
+          <SelectItem value="NGN">NGN</SelectItem>
+          <SelectItem value="KES">KES</SelectItem>
+          <SelectItem value="GHS">GHS</SelectItem>
+          <SelectItem value="ZAR">ZAR</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={typeFilter} onValueChange={onTypeFilterChange}>
+        <SelectTrigger className="h-8 w-full md:w-fit">
+          <SelectValue placeholder="Type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Types</SelectItem>
+          <SelectItem value="transaction-swap">Transaction Swap</SelectItem>
+          <SelectItem value="pay-in">Pay In</SelectItem>
+          <SelectItem value="pay-out">Pay Out</SelectItem>
+          <SelectItem value="internal-transfer">Internal Transfer</SelectItem>
+          <SelectItem value="currency-swap">Currency Swap</SelectItem>
+          <SelectItem value="deposit">Deposit</SelectItem>
+          <SelectItem value="withdrawal">Withdrawal</SelectItem>
+          <SelectItem value="fee">Fee</SelectItem>
+          <SelectItem value="refund">Refund</SelectItem>
+          <SelectItem value="adjustment">Adjustment</SelectItem>
+        </SelectContent>
+      </Select>
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
         <SelectTrigger className="h-8 w-full md:w-fit">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="all">All Statuses</SelectItem>
           <SelectItem value="pending">Pending</SelectItem>
-        </SelectContent>
-      </Select>
-      <Select value={roleFilter} onValueChange={onRoleFilterChange}>
-        <SelectTrigger className="h-8 w-full md:w-fit">
-          <SelectValue placeholder="Role" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Roles</SelectItem>
-          {roles.map((role) => (
-            <SelectItem className="capitalize" key={role.id} value={role.id.toString()}>
-              {formatToTitleCase(role.name)}
-            </SelectItem>
-          ))}
+          <SelectItem value="processing">Processing</SelectItem>
+          <SelectItem value="success">Success</SelectItem>
+          <SelectItem value="failed">Failed</SelectItem>
+          <SelectItem value="underpaid">Underpaid</SelectItem>
+          <SelectItem value="overpaid">Overpaid</SelectItem>
+          <SelectItem value="expired">Expired</SelectItem>
         </SelectContent>
       </Select>
       <Popover>
@@ -87,7 +110,7 @@ export function DataTableToolbar<TData>({
             {dateFrom ? format(dateFrom, "MMM dd, yyyy") : "Date from"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="bg-background w-auto p-0" align="start">
           <Calendar mode="single" selected={dateFrom} onSelect={onDateFromChange} initialFocus />
         </PopoverContent>
       </Popover>
@@ -98,7 +121,7 @@ export function DataTableToolbar<TData>({
             {dateTo ? format(dateTo, "MMM dd, yyyy") : "Date to"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="bg-background w-auto p-0" align="start">
           <Calendar mode="single" selected={dateTo} onSelect={onDateToChange} initialFocus />
         </PopoverContent>
       </Popover>

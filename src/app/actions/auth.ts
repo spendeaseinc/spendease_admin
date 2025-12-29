@@ -77,14 +77,14 @@ export async function signIn(data: z.infer<typeof LoginSchema>) {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 7, // 7 days
+          maxAge: 60 * 60 * 1, // 1 hour
         });
 
         cookieStore.set("user", JSON.stringify(result.data.user), {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 7, // 7 days
+          maxAge: 60 * 60 * 1, // 1 hour
         });
 
         return {

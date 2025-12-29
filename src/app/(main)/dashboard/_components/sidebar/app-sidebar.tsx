@@ -15,7 +15,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
-import { rootUser } from "@/data/users";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -33,7 +32,15 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user: {
+    name: string;
+    email: string;
+    avatar?: string;
+  } | null;
+}
+
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const themeMode = usePreferencesStore((s) => s.themeMode);
 
   return (
@@ -59,7 +66,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={rootUser} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );
