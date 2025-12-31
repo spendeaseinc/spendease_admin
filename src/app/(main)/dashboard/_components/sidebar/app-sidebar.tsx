@@ -1,20 +1,11 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-
-import Image from "next/image";
-import Link from "next/link";
 
 import { Settings } from "lucide-react";
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { APP_CONFIG } from "@/config/app-config";
+import Logo from "@/components/logo";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -40,33 +31,38 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   } | null;
 }
 
+function VersionDisplay() {
+  const { state } = useSidebar();
+  const isExpanded = state === "expanded";
+
+  if (!process.env.NEXT_PUBLIC_APP_VERSION || !isExpanded) {
+    return null;
+  }
+
+  return (
+    <div className="px-2 py-1.5 text-xs text-muted-foreground text-left">
+      {process.env.NEXT_PUBLIC_APP_VERSION}
+    </div>
+  )
+}
+
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const themeMode = usePreferencesStore((s) => s.themeMode);
 
   return (
-    <Sidebar {...props}>
+    <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:p-4.5">
-              <Link href="/dashboard/default">
-                {themeMode === "dark" ? (
-                  <Image alt="SpendEase Logo" src="/logo/logo-white.png" width={14} height={14} />
-                ) : (
-                  <Image alt="SpendEase Logo" src="/logo/logo-black.png" width={14} height={14} />
-                )}
-                <span className="text-base font-semibold">{APP_CONFIG.name}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex mx-2">
+          <Logo height={15} width={15} />
+        </div>
+        {/* <span className="text-base font-semibold">{APP_CONFIG.name}</span> */}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={sidebarItems} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser user={user} showDropdown={false} />
       </SidebarFooter>
     </Sidebar>
   );

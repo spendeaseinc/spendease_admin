@@ -15,6 +15,19 @@
   --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-geist: "Geist", "Geist Fallback";
   --font-geistsans: "Geist", "Geist Fallback";
+
+  --color-spendease: #FD6F01;
+  --color-spendeasebeta: #BB1920;
+  --color-spendeasecharlie: #FFB000;
+  --color-spendease-foreground: var(--primary-foreground);
+  --color-dark-card: #1a161e;
+  --color-dark-card-foreground: var(--primary-foreground);
+  --color-light-card: #f6f7f2;
+  --color-light-card-foreground: var(--primary-foreground);
+  --color-spendeasecream: #fff8e7;
+  --color-spendeasecream-foreground: var(--primary-foreground);
+
+
   --font-roboto: "Roboto", ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -64,7 +77,7 @@ These serve as the fallback; there is no separate default.css file. */
   /* converted black to dark blue */
   --popover-foreground: rgba(13, 18, 28, 1);
   /* converted black to dark blue */
-  --primary: oklch(0.205 0.04 258);
+  --primary:  oklch(0.7046 0.1955 46.73);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   /* converted black to dark blue */
@@ -105,12 +118,12 @@ These serve as the fallback; there is no separate default.css file. */
   --background: rgba(13, 18, 28, 1);
   --foreground: oklch(0.985 0 0);
   /* converted black to dark blue */
-  --card: rgba(17, 25, 39, 1);
+  --card: 224 71.4% 4.1%;
   --card-foreground: oklch(0.985 0 0);
   /* converted black to dark blue */
   --popover: oklch(0.205 0.04 258);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
+  --primary: oklch(0.6735 0.1702 46.73);
   /* converted black to dark blue */
   --primary-foreground: oklch(0.205 0.04 258);
   /* converted black to dark blue */
@@ -175,6 +188,27 @@ These serve as the fallback; there is no separate default.css file. */
   [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xl {
     box-shadow: var(--shadow-2xl);
   }
+
+    /* Smooth sidebar transitions */
+    .sidebar-transition-smooth {
+      transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+      transition-duration: 300ms;
+    }
+    
+    .sidebar-transition-snappy {
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 250ms;
+    }
+    
+    .sidebar-transition-bouncy {
+      transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition-duration: 400ms;
+    }
+    
+    .sidebar-transition-slow {
+      transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+      transition-duration: 450ms;
+    }
 }
 
 @layer base {
@@ -185,6 +219,105 @@ These serve as the fallback; there is no separate default.css file. */
   body {
     @apply bg-background text-foreground overscroll-none;
   }
+}
+
+
+@keyframes bounceInRight {
+  0% {
+    transform: translateX(100%) scale(0.95);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translateX(-10%) scale(1.05);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(2%) scale(0.98);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceInLeft {
+  0% {
+    transform: translateX(-100%) scale(0.95);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translateX(10%) scale(1.05);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(-2%) scale(0.98);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceInTop {
+  0% {
+    transform: translateY(-100%) scale(0.95);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translateY(10%) scale(1.05);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-2%) scale(0.98);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes bounceInBottom {
+  0% {
+    transform: translateY(100%) scale(0.95);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translateY(-10%) scale(1.05);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(2%) scale(0.98);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.bounce-in-right {
+  animation: bounceInRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bounce-in-left {
+  animation: bounceInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bounce-in-top {
+  animation: bounceInTop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bounce-in-bottom {
+  animation: bounceInBottom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .disable-transitions * {
