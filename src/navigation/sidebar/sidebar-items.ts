@@ -8,6 +8,7 @@ import {
   CircleDollarSign,
   LayoutGrid,
   PauseCircle,
+  Settings,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -77,8 +78,13 @@ export const sidebarItems: NavGroup[] = [
       },
       {
         title: "Notifications",
-        url: "/dashboard/coming-soon",
+        url: "/dashboard/notifications",
         icon: Bell,
+      },
+      {
+        title: "Settings",
+        url: "/dashboard/settings",
+        icon: Settings,
       },
     ],
   },

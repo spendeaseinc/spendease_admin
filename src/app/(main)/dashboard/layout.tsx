@@ -1,34 +1,15 @@
+/* eslint-disable prettier/prettier */
 import { ReactNode } from "react";
-
-import { cookies } from "next/headers";
-
-import { Bell } from "lucide-react";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { getSession } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
-import { getPreference } from "@/server/server-actions";
-import {
-  SIDEBAR_VARIANT_VALUES,
-  SIDEBAR_COLLAPSIBLE_VALUES,
-  CONTENT_LAYOUT_VALUES,
-  NAVBAR_STYLE_VALUES,
-  type SidebarVariant,
-  type SidebarCollapsible,
-  type ContentLayout,
-  type NavbarStyle,
-} from "@/types/preferences/layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
-  const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
-
   const session = await getSession();
 
   const user = session?.user
@@ -39,51 +20,34 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
       }
     : null;
 
-  const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
-    getPreference<SidebarVariant>("sidebar_variant", SIDEBAR_VARIANT_VALUES, "sidebar"),
-    getPreference<SidebarCollapsible>("sidebar_collapsible", SIDEBAR_COLLAPSIBLE_VALUES, "icon"),
-    getPreference<ContentLayout>("content_layout", CONTENT_LAYOUT_VALUES, "centered"),
-    getPreference<NavbarStyle>("navbar_style", NAVBAR_STYLE_VALUES, "scroll"),
-  ]);
-
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} user={user} />
-      <SidebarInset
-        data-content-layout={contentLayout}
-        className={cn(
-          "data-[content-layout=centered]:mx-auto! data-[content-layout=centered]:max-w-screen-2xl",
-          // Adds right margin for inset sidebar in centered layout up to 113rem.
-          // On wider screens with collapsed sidebar, removes margin and sets margin auto for alignment.
-          "max-[113rem]:peer-data-[variant=inset]:mr-2! min-[101rem]:peer-data-[variant=inset]:peer-data-[state=collapsed]:mr-auto!",
-        )}
-      >
-        <header
-          data-navbar-style={navbarStyle}
-          className={cn(
-            "flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12",
-            // Handle sticky navbar style with conditional classes so blur, background, z-index, and rounded corners remain consistent across all SidebarVariant layouts.
-            "data-[navbar-style=sticky]:bg-background/50 data-[navbar-style=sticky]:sticky data-[navbar-style=sticky]:top-0 data-[navbar-style=sticky]:z-50 data-[navbar-style=sticky]:overflow-hidden data-[navbar-style=sticky]:rounded-t-[inherit] data-[navbar-style=sticky]:backdrop-blur-md",
-          )}
-        >
-          <div className="flex w-full items-center justify-between px-4 lg:px-6">
-            <div className="flex items-center gap-1 lg:gap-2">
-              <SidebarTrigger className="-ml-1" />
-              <SearchDialog />
+    <div className="flex-1 w-full h-screen flex flex-col">
+      <SidebarProvider defaultOpen={false}>
+        <AppSidebar user={user} />
+        <SidebarInset>
+          <header
+            // data-navbar-style={navbarStyle}
+            className="bg-background/95 sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-sm"
+          >
+            <div className="flex w-full items-center justify-between px-4 lg:px-6">
+              <div className="flex items-center gap-1 lg:gap-2">
+                <SidebarTrigger className="-ml-1 md:hidden" />
+                <SearchDialog />
+              </div>
+              <div className="flex items-center gap-2">
+                <ThemeSwitcher />
+                {/*
+                <Button variant="ghost" size="icon">
+                  <Bell />
+                </Button>
+                */}
+                <AccountSwitcher user={user} />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <ThemeSwitcher />
-              {/*
-              <Button variant="ghost" size="icon">
-                <Bell />
-              </Button>
-              */}
-              <AccountSwitcher user={user} />
-            </div>
-          </div>
-        </header>
-        <div className="h-full p-4 md:p-6">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+          </header>
+          <div className="h-full p-4 md:p-6">{children}</div>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   );
 }

@@ -26,9 +26,10 @@ interface NavUserProps {
     readonly email: string;
     readonly avatar?: string;
   } | null;
+  readonly showDropdown?: boolean;
 }
 
-export function NavUser({ user }: NavUserProps) {
+export function NavUser({ user, showDropdown = true }: NavUserProps) {
   const { isMobile } = useSidebar();
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -50,6 +51,25 @@ export function NavUser({ user }: NavUserProps) {
 
   if (!displayUser) {
     return null;
+  }
+
+  // If showDropdown is false, render a simple display without dropdown functionality
+  if (!showDropdown) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" className="cursor-default">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={displayUser.avatar ?? undefined} alt={displayUser.name} />
+              <AvatarFallback>{getInitials(displayUser.name)}</AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-semibold">{displayUser.name}</span>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
   }
 
   return (
