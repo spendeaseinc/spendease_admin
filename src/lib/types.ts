@@ -336,3 +336,17 @@ export interface DashboardStatsResponse {
   // eslint-disable-next-line max-lines
   data: DashboardStats;
 }
+
+// Notification types
+export type NotificationType = "unique" | "broadcast";
+export type NotificationStatus = "pending" | "sent" | "delivered" | "read" | "failed";
+
+export interface Notification {
+  id: number;
+  user_id: number | null;
+  type: NotificationType;
+  title: string;
+  body: string;
+  status: NotificationStatus;
+  created_at: string;
+}
