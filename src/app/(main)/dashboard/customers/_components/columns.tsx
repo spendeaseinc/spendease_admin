@@ -6,7 +6,6 @@ import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format, formatDistanceToNow } from "date-fns";
 import { ArrowUpDown, Eye } from "lucide-react";
-import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,23 +92,13 @@ export const columns: ColumnDef<User>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const customerId = row.original.id;
-      const status = row.getValue("status") as string;
 
-      return status === "active" ? (
+      return (
         <Link href={`/dashboard/customers/${customerId}`}>
           <Button variant="ghost" size="sm" className="flex items-center">
             <Eye className="h-4 w-4" /> View
           </Button>
         </Link>
-      ) : (
-        <Button
-          onClick={() => toast.error("User hasn't completed KYC")}
-          variant="ghost"
-          size="sm"
-          className="flex items-center"
-        >
-          <Eye className="h-4 w-4" /> View
-        </Button>
       );
     },
   },

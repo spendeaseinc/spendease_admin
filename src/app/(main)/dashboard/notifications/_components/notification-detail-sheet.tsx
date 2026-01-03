@@ -17,21 +17,21 @@ interface NotificationDetailSheetProps {
   onEdit?: (notification: Notification) => void;
 }
 
-const getStatusVariant = (status: NotificationStatus): "default" | "secondary" | "destructive" | "outline" => {
-  switch (status) {
-    case "delivered":
-    case "read":
-      return "default";
-    case "sent":
-      return "secondary";
-    case "pending":
-      return "outline";
-    case "failed":
-      return "destructive";
-    default:
-      return "outline";
-  }
-};
+// const getStatusVariant = (status: NotificationStatus): "default" | "secondary" | "destructive" | "outline" => {
+//   switch (status) {
+//     case "delivered":
+//     case "read":
+//       return "default";
+//     case "sent":
+//       return "secondary";
+//     case "pending":
+//       return "outline";
+//     case "failed":
+//       return "destructive";
+//     default:
+//       return "outline";
+//   }
+// };
 
 const getStatusColor = (status: NotificationStatus): string => {
   switch (status) {
