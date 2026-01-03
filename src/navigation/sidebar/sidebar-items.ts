@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   PauseCircle,
   Settings,
+  ChartLine,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -55,6 +56,11 @@ export const sidebarItems: NavGroup[] = [
         title: "Transactions",
         url: "/dashboard/transactions",
         icon: WalletCards,
+      },
+      {
+        title: "Metrics",
+        url: "/dashboard/metrics",
+        icon: ChartLine,
       },
       {
         title: "Team",
