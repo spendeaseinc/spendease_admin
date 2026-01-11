@@ -22,6 +22,7 @@ import {
   type CountryAnalyticsApiResponse,
   type DemoDataReason,
   type SupportedCurrency,
+  ChartDataItem,
 } from "@/lib/analytics-types";
 import type { ApiError } from "@/lib/types";
 import { getValueFromCookie } from "@/server/server-actions";
@@ -1640,7 +1641,7 @@ function transformMonthlyProfitToCharts(
     showLegend: true,
     isSnapshot: false,
     data: monthly.map((m) => {
-      const dataPoint: Record<string, number | string> = { name: m.monthLabel };
+      const dataPoint: ChartDataItem = { name: m.monthLabel };
       // Add data for each currency
       SUPPORTED_CURRENCIES.forEach((currency) => {
         const currencyData = m.byCurrency.find((c) => c.currency === currency);
@@ -1681,7 +1682,7 @@ function transformMonthlyProfitToCharts(
     showLegend: true,
     isSnapshot: false,
     data: monthly.map((m) => {
-      const dataPoint: Record<string, number | string> = { name: m.monthLabel };
+      const dataPoint: ChartDataItem = { name: m.monthLabel };
       SUPPORTED_CURRENCIES.forEach((currency) => {
         const currencyData = m.byCurrency.find((c) => c.currency === currency);
         dataPoint[currency] = currencyData?.combinedNetProfit ?? 0;
@@ -1702,7 +1703,7 @@ function transformMonthlyProfitToCharts(
     showLegend: true,
     isSnapshot: false,
     data: monthly.map((m) => {
-      const dataPoint: Record<string, number | string> = { name: m.monthLabel };
+      const dataPoint: ChartDataItem = { name: m.monthLabel };
       SUPPORTED_CURRENCIES.forEach((currency) => {
         const currencyData = m.byCurrency.find((c) => c.currency === currency);
         dataPoint[currency] = Math.round(currencyData?.totalVolume ?? 0);
