@@ -70,6 +70,8 @@ export interface ChartData {
   demoDataMessage?: string;
   // Snapshot vs time-series - snapshot charts don't support time frame filtering
   isSnapshot?: boolean;
+  // If true, only show this chart when "All" currency filter is selected
+  showOnlyOnAll?: boolean;
 }
 
 // ============================================================================
@@ -392,4 +394,79 @@ export interface AnalyticsApiResults {
   currencyPairAnalytics: ApiEndpointResult<CurrencyPairAnalyticsApiResponse["data"]>;
   walletAnalytics: ApiEndpointResult<WalletAnalyticsApiResponse["data"]>;
   customerAnalytics: ApiEndpointResult<CustomerAnalyticsApiResponse["data"]>;
+}
+
+// ============================================================================
+// Monthly Profit Analytics Types (Time-Series)
+// ============================================================================
+
+// GET /api/admin/dashboard/profit-analytics/monthly
+export interface MonthlyProfitAnalyticsApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    monthly: Array<{
+      month: string;
+      monthLabel: string;
+      byCurrency: Array<{
+        currency: string;
+        grossRevenue: number;
+        netRevenue: number;
+        totalTransactionFees: number;
+        fxSales: number;
+        combinedNetProfit: number;
+        transactionCount: number;
+        totalVolume: number;
+      }>;
+      summary: {
+        totalGrossRevenue: number;
+        totalNetRevenue: number;
+        totalTransactionFees: number;
+        totalFxSales: number;
+        totalCombinedNetProfit: number;
+        totalTransactionCount: number;
+        totalVolume: number;
+      };
+    }>;
+    dateRange: { from: string; to: string };
+  };
+}
+
+// ============================================================================
+// Country Analytics Types
+// ============================================================================
+
+// GET /api/admin/dashboard/country-analytics
+export interface CountryAnalyticsApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    sendingCountries: Array<{
+      countryCode: string;
+      countryName: string;
+      transactionCount: number;
+      totalAmountLocal: number;
+      currency: string;
+      totalAmountUSD: number;
+    }>;
+    receivingCountries: Array<{
+      countryCode: string;
+      countryName: string;
+      transactionCount: number;
+      totalAmountLocal: number;
+      currency: string;
+      totalAmountUSD: number;
+    }>;
+    summary: {
+      topSendingCountry: string;
+      topSendingCountryVolume: number;
+      topReceivingCountry: string;
+      topReceivingCountryVolume: number;
+      totalSendingVolume: number;
+      totalReceivingVolume: number;
+      totalSendingAmountUSD: number;
+      totalReceivingAmountUSD: number;
+    };
+    dateRange: { from: string; to: string };
+  };
 }

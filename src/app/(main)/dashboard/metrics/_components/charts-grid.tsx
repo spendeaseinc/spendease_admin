@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -17,6 +17,19 @@ interface ChartsGridProps {
 
 export function ChartsGrid({ charts: initialCharts, isEditMode, currencyFilter }: ChartsGridProps) {
   const [charts, setCharts] = useState(initialCharts);
+
+  // Filter charts based on currency filter
+  // Charts with showOnlyOnAll=true should only appear when currencyFilter="all"
+  const filteredCharts = useMemo(() => {
+    return charts.filter((chart) => {
+      // If chart has showOnlyOnAll=true, only show when filter is "all"
+      if (chart.showOnlyOnAll) {
+        return currencyFilter === "all";
+      }
+      // Show all other charts regardless of filter
+      return true;
+    });
+  }, [charts, currencyFilter]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -40,9 +53,9 @@ export function ChartsGrid({ charts: initialCharts, isEditMode, currencyFilter }
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={charts.map((chart) => chart.id)} strategy={rectSortingStrategy}>
+      <SortableContext items={filteredCharts.map((chart) => chart.id)} strategy={rectSortingStrategy}>
         <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-2">
-          {charts.map((chart) => (
+          {filteredCharts.map((chart) => (
             <ChartCard key={chart.id} chart={chart} isEditMode={isEditMode} currencyFilter={currencyFilter} />
           ))}
         </div>
