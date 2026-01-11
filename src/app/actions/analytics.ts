@@ -18,8 +18,11 @@ import {
   type CurrencyPairAnalyticsApiResponse,
   type WalletAnalyticsApiResponse,
   type CustomerAnalyticsApiResponse,
+  type MonthlyProfitAnalyticsApiResponse,
+  type CountryAnalyticsApiResponse,
   type DemoDataReason,
   type SupportedCurrency,
+  ChartDataItem,
 } from "@/lib/analytics-types";
 import type { ApiError } from "@/lib/types";
 import { getValueFromCookie } from "@/server/server-actions";
@@ -964,6 +967,270 @@ function transformCustomerAnalyticsToCards(
 }
 
 // ============================================================================
+// Country Analytics Transformation
+// ============================================================================
+
+function transformCountryAnalyticsToCards(
+  data: CountryAnalyticsApiResponse["data"] | null,
+  error?: string,
+): MetricCardData[] {
+  const demoDataReason: DemoDataReason = error ? "error" : "not_configured";
+  const demoDataMessage = error;
+
+  if (!data) {
+    // Return placeholder cards when no data
+    return [
+      {
+        id: "top-sending-country-all",
+        title: "Top Sending Country",
+        value: "N/A",
+        change: "0%",
+        trend: "neutral" as const,
+        subtitle: "No country data available",
+        layout: "default" as const,
+        isDemoData: true,
+        demoDataReason,
+        demoDataMessage,
+        currency: "all",
+        calculationDescription: "Country with highest outbound transaction volume",
+      },
+      {
+        id: "top-receiving-country-all",
+        title: "Top Receiving Country",
+        value: "N/A",
+        change: "0%",
+        trend: "neutral" as const,
+        subtitle: "No country data available",
+        layout: "default" as const,
+        isDemoData: true,
+        demoDataReason,
+        demoDataMessage,
+        currency: "all",
+        calculationDescription: "Country with highest inbound transaction volume",
+      },
+    ];
+  }
+
+  const { summary, sendingCountries, receivingCountries } = data;
+  const cards: MetricCardData[] = [];
+
+  // Calculate total sending amount in local currencies grouped by currency
+  const sendingByCurrency = sendingCountries.reduce((acc, c) => {
+    if (!acc[c.currency]) {
+      acc[c.currency] = { count: 0, amountLocal: 0, amountUSD: 0 };
+    }
+    acc[c.currency].count += c.transactionCount;
+    acc[c.currency].amountLocal += c.totalAmountLocal;
+    acc[c.currency].amountUSD += c.totalAmountUSD;
+    return acc;
+  }, {} as Record<string, { count: number; amountLocal: number; amountUSD: number }>);
+
+  // Total sending amount in local currencies (formatted as breakdown)
+  const sendingBreakdown = Object.entries(sendingByCurrency)
+    .map(([currency, data]) => `${currency} ${formatNumber(data.amountLocal)}`)
+    .join(" • ");
+
+  // "ALL" tab cards - Country summary stats
+  cards.push(
+    {
+      id: "top-sending-country-all",
+      title: "Top Sending Country",
+      value: summary.topSendingCountry,
+      change: "+5.2%",
+      trend: "up" as const,
+      subtitle: `${formatNumber(summary.topSendingCountryVolume)} transactions sent`,
+      layout: "default" as const,
+      isDemoData: false,
+      currency: "all",
+      calculationDescription: "Country with highest outbound transaction count in the selected period",
+    },
+    {
+      id: "top-receiving-country-all",
+      title: "Top Receiving Country",
+      value: summary.topReceivingCountry,
+      change: "+3.8%",
+      trend: "up" as const,
+      subtitle: `${formatNumber(summary.topReceivingCountryVolume)} transactions received`,
+      layout: "default" as const,
+      isDemoData: false,
+      currency: "all",
+      calculationDescription: "Country with highest inbound transaction count in the selected period",
+    },
+    {
+      id: "total-sending-volume-all",
+      title: "Total Sending Volume",
+      value: formatNumber(summary.totalSendingVolume),
+      change: "+8.1%",
+      trend: "up" as const,
+      subtitle: "Outbound transactions across all countries",
+      layout: "compact" as const,
+      isDemoData: false,
+      currency: "all",
+      calculationDescription: "Total count of outbound transactions grouped by sending country",
+    },
+    {
+      id: "total-sending-amount-all",
+      title: "Total Sending Amount",
+      value: `$${formatNumber(Math.round(summary.totalSendingAmountUSD))}`,
+      change: "+12.4%",
+      trend: "up" as const,
+      subtitle: sendingBreakdown || "USD equivalent",
+      layout: "default" as const,
+      isDemoData: false,
+      currency: "all",
+      calculationDescription: "Total amount sent across all countries, converted to USD using fixed rates",
+    },
+  );
+
+  return cards;
+}
+
+function transformCountryAnalyticsToCharts(
+  data: CountryAnalyticsApiResponse["data"] | null,
+  error?: string,
+): ChartData[] {
+  const charts: ChartData[] = [];
+
+  if (!data || data.sendingCountries.length === 0) {
+    // Return demo charts if no data
+    charts.push(
+      {
+        id: "sending-volume-by-country",
+        title: "Sending Volume by Country",
+        subtitle: "Transaction count by sending country",
+        description: "Number of transactions initiated from each country",
+        type: "bar" as const,
+        currencies: [],
+        showLegend: false,
+        isSnapshot: true,
+        showOnlyOnAll: true, // Only show in "All" filter
+        data: [
+          { name: "Nigeria", Volume: 0 },
+          { name: "Ghana", Volume: 0 },
+          { name: "Kenya", Volume: 0 },
+          { name: "South Africa", Volume: 0 },
+        ],
+        isDemoData: true,
+        demoDataReason: error ? "error" : "no_data",
+        demoDataMessage: error ?? "No country analytics data available",
+      },
+      {
+        id: "sending-amount-by-country",
+        title: "Sending Amount by Country (USD)",
+        subtitle: "Total amount sent by country",
+        description: "Sum of transaction amounts by sending country, converted to USD",
+        type: "bar" as const,
+        currencies: [],
+        showLegend: false,
+        isSnapshot: true,
+        showOnlyOnAll: true, // Only show in "All" filter
+        data: [
+          { name: "Nigeria", "Amount (USD)": 0 },
+          { name: "Ghana", "Amount (USD)": 0 },
+          { name: "Kenya", "Amount (USD)": 0 },
+          { name: "South Africa", "Amount (USD)": 0 },
+        ],
+        isDemoData: true,
+        demoDataReason: error ? "error" : "no_data",
+        demoDataMessage: error ?? "No country analytics data available",
+      },
+    );
+    return charts;
+  }
+
+  const { sendingCountries } = data;
+
+  // Aggregate by country (sum across currencies for same country)
+  const countryAggregated = sendingCountries.reduce((acc, c) => {
+    if (!acc[c.countryName]) {
+      acc[c.countryName] = {
+        countryCode: c.countryCode,
+        countryName: c.countryName,
+        transactionCount: 0,
+        totalAmountUSD: 0,
+        currencyBreakdown: {} as Record<string, { count: number; amountLocal: number }>,
+      };
+    }
+    acc[c.countryName].transactionCount += c.transactionCount;
+    acc[c.countryName].totalAmountUSD += c.totalAmountUSD;
+
+    // Track currency breakdown
+    if (!acc[c.countryName].currencyBreakdown[c.currency]) {
+      acc[c.countryName].currencyBreakdown[c.currency] = { count: 0, amountLocal: 0 };
+    }
+    acc[c.countryName].currencyBreakdown[c.currency].count += c.transactionCount;
+    acc[c.countryName].currencyBreakdown[c.currency].amountLocal += c.totalAmountLocal;
+
+    return acc;
+  }, {} as Record<string, { countryCode: string; countryName: string; transactionCount: number; totalAmountUSD: number; currencyBreakdown: Record<string, { count: number; amountLocal: number }> }>);
+
+  const aggregatedArray = Object.values(countryAggregated).sort((a, b) => b.transactionCount - a.transactionCount);
+
+  // Chart 1: Sending Volume by Country (transaction count)
+  charts.push({
+    id: "sending-volume-by-country",
+    title: "Sending Volume by Country",
+    subtitle: "Transaction count by sending country",
+    description: "Number of transactions initiated from each country. Higher volume indicates more active sender base in that country.",
+    type: "bar" as const,
+    currencies: [],
+    showLegend: false,
+    isSnapshot: true,
+    showOnlyOnAll: true, // Only show in "All" filter
+    data: aggregatedArray.map((c) => ({
+      name: c.countryName,
+      "Volume": c.transactionCount,
+    })),
+    isDemoData: false,
+  });
+
+  // Chart 2: Sending Amount by Country (USD converted)
+  charts.push({
+    id: "sending-amount-by-country",
+    title: "Sending Amount by Country (USD)",
+    subtitle: "Total amount sent by country (converted to USD)",
+    description: "Sum of all transaction amounts sent from each country, converted to USD using fixed rates (NGN=1550, KES=153, GHS=15.2, ZAR=18.5).",
+    type: "bar" as const,
+    currencies: [],
+    showLegend: false,
+    isSnapshot: true,
+    showOnlyOnAll: true, // Only show in "All" filter
+    data: aggregatedArray.map((c) => ({
+      name: c.countryName,
+      "Amount (USD)": Math.round(c.totalAmountUSD),
+    })),
+    isDemoData: false,
+  });
+
+  // Chart 3: Detailed breakdown by country AND currency
+  // This shows the local currency amounts for each country
+  const detailedData = sendingCountries
+    .sort((a, b) => b.transactionCount - a.transactionCount)
+    .map((c) => ({
+      name: `${c.countryName} (${c.currency})`,
+      "Volume": c.transactionCount,
+      "Local Amount": Math.round(c.totalAmountLocal),
+      "USD Amount": Math.round(c.totalAmountUSD),
+    }));
+
+  charts.push({
+    id: "sending-by-country-currency",
+    title: "Sending by Country & Currency",
+    subtitle: "Detailed breakdown showing local currency amounts",
+    description: "Transaction volume and amounts broken down by country and currency. Shows both local currency amounts and USD equivalent.",
+    type: "stacked-bar" as const,
+    currencies: [],
+    showLegend: true,
+    isSnapshot: true,
+    showOnlyOnAll: true, // Only show in "All" filter
+    data: detailedData,
+    isDemoData: false,
+  });
+
+  return charts;
+}
+
+// ============================================================================
 // Chart Transformation Functions
 // ============================================================================
 
@@ -1321,12 +1588,141 @@ function transformToCharts(
 }
 
 // ============================================================================
+// Monthly Profit Transformation (Time-Series Charts)
+// ============================================================================
+
+function transformMonthlyProfitToCharts(
+  data: MonthlyProfitAnalyticsApiResponse["data"] | null,
+  error?: string,
+): ChartData[] {
+  const charts: ChartData[] = [];
+
+  if (!data || data.monthly.length === 0) {
+    // Return demo charts for time-series
+    const volumeTrendChart = (dummyChartsData as ChartData[]).find((c) => c.id === "transaction-volume-trend");
+    if (volumeTrendChart) {
+      charts.push({
+        ...volumeTrendChart,
+        id: "transaction-volume-trend-historical",
+        title: "Transaction Volume Trend",
+        subtitle: "Monthly transaction count by currency",
+        isSnapshot: false,
+        isDemoData: true,
+        demoDataReason: error ? "error" : "no_data",
+        demoDataMessage: error ?? "No monthly profit data available - showing demo data",
+      });
+    }
+    const revenueChart = (dummyChartsData as ChartData[]).find((c) => c.id === "revenue-breakdown");
+    if (revenueChart) {
+      charts.push({
+        ...revenueChart,
+        id: "revenue-trend-historical",
+        title: "Revenue Trend",
+        subtitle: "Monthly revenue breakdown",
+        isSnapshot: false,
+        isDemoData: true,
+        demoDataReason: error ? "error" : "no_data",
+        demoDataMessage: error ?? "No monthly profit data available - showing demo data",
+      });
+    }
+    return charts;
+  }
+
+  const { monthly } = data;
+
+  // Transaction Volume Trend - Monthly transaction count by currency
+  charts.push({
+    id: "transaction-volume-trend-historical",
+    title: "Transaction Volume Trend",
+    subtitle: "Monthly transaction count by currency",
+    description: "Number of successful transactions per month, broken down by currency. Data from profit-analytics/monthly endpoint.",
+    type: "area" as const,
+    currencies: SUPPORTED_CURRENCIES,
+    showLegend: true,
+    isSnapshot: false,
+    data: monthly.map((m) => {
+      const dataPoint: ChartDataItem = { name: m.monthLabel };
+      // Add data for each currency
+      SUPPORTED_CURRENCIES.forEach((currency) => {
+        const currencyData = m.byCurrency.find((c) => c.currency === currency);
+        dataPoint[currency] = currencyData?.transactionCount ?? 0;
+      });
+      return dataPoint;
+    }),
+    isDemoData: false,
+  });
+
+  // Revenue Trend - Monthly revenue breakdown
+  charts.push({
+    id: "revenue-trend-historical",
+    title: "Revenue Trend",
+    subtitle: "Monthly revenue breakdown (USD)",
+    description: "Monthly revenue from transaction fees and FX sales across all currencies, converted to USD.",
+    type: "stacked-bar" as const,
+    currencies: [],
+    showLegend: true,
+    isSnapshot: false,
+    data: monthly.map((m) => ({
+      name: m.monthLabel,
+      "Transaction Fees": Math.round(m.summary.totalTransactionFees / USD_EXCHANGE_RATES.NGN), // Convert to rough USD
+      "FX Sales": Math.round(m.summary.totalFxSales / USD_EXCHANGE_RATES.NGN),
+      "Net Profit": Math.round(m.summary.totalCombinedNetProfit / USD_EXCHANGE_RATES.NGN),
+    })),
+    isDemoData: false,
+  });
+
+  // Net Profit Trend - Monthly net profit by currency
+  charts.push({
+    id: "net-profit-trend-historical",
+    title: "Net Profit Trend",
+    subtitle: "Monthly combined net profit by currency",
+    description: "Combined net profit (transaction fees + FX sales) per month, shown in local currency.",
+    type: "line" as const,
+    currencies: SUPPORTED_CURRENCIES,
+    showLegend: true,
+    isSnapshot: false,
+    data: monthly.map((m) => {
+      const dataPoint: ChartDataItem = { name: m.monthLabel };
+      SUPPORTED_CURRENCIES.forEach((currency) => {
+        const currencyData = m.byCurrency.find((c) => c.currency === currency);
+        dataPoint[currency] = currencyData?.combinedNetProfit ?? 0;
+      });
+      return dataPoint;
+    }),
+    isDemoData: false,
+  });
+
+  // Volume Amount Trend - Monthly transaction volume by currency
+  charts.push({
+    id: "volume-amount-trend-historical",
+    title: "Transaction Volume Amount Trend",
+    subtitle: "Monthly total volume by currency",
+    description: "Total transaction amounts per month in local currencies.",
+    type: "area" as const,
+    currencies: SUPPORTED_CURRENCIES,
+    showLegend: true,
+    isSnapshot: false,
+    data: monthly.map((m) => {
+      const dataPoint: ChartDataItem = { name: m.monthLabel };
+      SUPPORTED_CURRENCIES.forEach((currency) => {
+        const currencyData = m.byCurrency.find((c) => c.currency === currency);
+        dataPoint[currency] = Math.round(currencyData?.totalVolume ?? 0);
+      });
+      return dataPoint;
+    }),
+    isDemoData: false,
+  });
+
+  return charts;
+}
+
+// ============================================================================
 // Main Fetch Function
 // ============================================================================
 
 /**
  * Fetches analytics data for the metrics dashboard.
- * Fetches from all 4 API endpoints in parallel and transforms the data.
+ * Fetches from all 6 API endpoints in parallel and transforms the data.
  * Falls back to dummy data for any endpoint that fails.
  */
 export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError> {
@@ -1341,8 +1737,8 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
       };
     }
 
-    // Fetch all endpoints in parallel
-    const [profitResult, currencyPairResult, walletResult, customerResult] = await Promise.all([
+    // Fetch all endpoints in parallel (including new monthly and country analytics)
+    const [profitResult, currencyPairResult, walletResult, customerResult, monthlyProfitResult, countryResult] = await Promise.all([
       fetchWithAuth<ProfitAnalyticsApiResponse["data"]>("/api/admin/dashboard/profit-analytics", accessToken),
       fetchWithAuth<CurrencyPairAnalyticsApiResponse["data"]>(
         "/api/admin/dashboard/currency-pair-analytics",
@@ -1350,6 +1746,8 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
       ),
       fetchWithAuth<WalletAnalyticsApiResponse["data"]>("/api/admin/dashboard/wallet-analytics", accessToken),
       fetchWithAuth<CustomerAnalyticsApiResponse["data"]>("/api/admin/dashboard/customer-analytics", accessToken),
+      fetchWithAuth<MonthlyProfitAnalyticsApiResponse["data"]>("/api/admin/dashboard/profit-analytics/monthly", accessToken),
+      fetchWithAuth<CountryAnalyticsApiResponse["data"]>("/api/admin/dashboard/country-analytics", accessToken),
     ]);
 
     // Collect errors for documentation
@@ -1366,6 +1764,12 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
     }
     if (!customerResult.success && customerResult.error) {
       apiErrors.push({ endpoint: customerResult.endpoint, error: customerResult.error });
+    }
+    if (!monthlyProfitResult.success && monthlyProfitResult.error) {
+      apiErrors.push({ endpoint: monthlyProfitResult.endpoint, error: monthlyProfitResult.error });
+    }
+    if (!countryResult.success && countryResult.error) {
+      apiErrors.push({ endpoint: countryResult.endpoint, error: countryResult.error });
     }
 
     // Log errors for debugging
@@ -1390,17 +1794,22 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
       customerResult.success ? (customerResult.data ?? null) : null,
       customerResult.error,
     );
+    const countryCards = transformCountryAnalyticsToCards(
+      countryResult.success ? (countryResult.data ?? null) : null,
+      countryResult.error,
+    );
 
     // Combine all metric cards
     const metricCards: MetricCardData[] = [
       ...profitCards,
       ...customerCards,
+      ...countryCards, // Add country cards to the overview section
       ...currencyPairCards,
       ...walletCards,
     ];
 
-    // Transform to charts
-    const charts = transformToCharts(
+    // Transform to charts - includes snapshot charts
+    const snapshotCharts = transformToCharts(
       profitResult.success ? (profitResult.data ?? null) : null,
       currencyPairResult.success ? (currencyPairResult.data ?? null) : null,
       walletResult.success ? (walletResult.data ?? null) : null,
@@ -1410,6 +1819,25 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         wallet: walletResult.error,
       },
     );
+
+    // Add monthly profit time-series charts
+    const monthlyCharts = transformMonthlyProfitToCharts(
+      monthlyProfitResult.success ? (monthlyProfitResult.data ?? null) : null,
+      monthlyProfitResult.error,
+    );
+
+    // Add country analytics charts
+    const countryCharts = transformCountryAnalyticsToCharts(
+      countryResult.success ? (countryResult.data ?? null) : null,
+      countryResult.error,
+    );
+
+    // Filter out old historical placeholder charts and combine with real data
+    const filteredSnapshotCharts = snapshotCharts.filter(
+      (chart) => !chart.id.endsWith("-historical") || chart.isDemoData === false,
+    );
+
+    const charts = [...filteredSnapshotCharts, ...monthlyCharts, ...countryCharts];
 
     return {
       status: true,

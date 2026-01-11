@@ -1,6 +1,15 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
-import type { ApiError, ApiResponse, Customer } from "@/lib/types";
+import type {
+  ApiError,
+  ApiResponse,
+  Customer,
+  CustomerTransactionsParams,
+  SwapsApiResponse,
+  TransactionsApiResponse,
+} from "@/lib/types";
 import { adjustDateTo, buildQueryParams, handleApiResponse } from "@/lib/utils";
 import { getValueFromCookie } from "@/server/server-actions";
 
@@ -244,6 +253,102 @@ export async function exportUsers(params: FetchUsersParams = {}): Promise<Blob |
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to export users",
+    };
+  }
+}
+
+// ============================================
+// Customer Detail Page Actions
+// ============================================
+
+/**
+ * Fetch transactions for a specific customer with filtering and pagination
+ */
+export async function fetchCustomerTransactions(
+  params: CustomerTransactionsParams
+): Promise<TransactionsApiResponse | ApiError> {
+  try {
+    const accessToken = await getValueFromCookie("accessToken");
+
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Authentication required",
+        unauthorized: true,
+      };
+    }
+
+    const adjustedDateTo = adjustDateTo(params.dateTo);
+
+    const queryString = buildQueryParams({
+      userId: params.userId,
+      page: params.page,
+      status: params.status,
+      type: params.type,
+      currency: params.currency,
+      search: params.search,
+      dateFrom: params.dateFrom,
+      dateTo: adjustedDateTo,
+    });
+
+    const url = `${API_BASE_URL}/api/admin/transactions/wallet-transactions?${queryString}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    return await handleApiResponse(response);
+  } catch (error) {
+    console.error("Error fetching customer transactions:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch customer transactions",
+    };
+  }
+}
+
+/**
+ * Fetch transaction swaps for a specific customer (for analytics)
+ */
+export async function fetchCustomerSwaps(userId: string): Promise<SwapsApiResponse | ApiError> {
+  try {
+    const accessToken = await getValueFromCookie("accessToken");
+
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Authentication required",
+        unauthorized: true,
+      };
+    }
+
+    const queryString = buildQueryParams({
+      userId,
+      limit: 1000, // Get all swaps for analytics
+    });
+
+    const url = `${API_BASE_URL}/api/admin/transactions/swaps?${queryString}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    return await handleApiResponse(response);
+  } catch (error) {
+    console.error("Error fetching customer swaps:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch customer swaps",
     };
   }
 }
