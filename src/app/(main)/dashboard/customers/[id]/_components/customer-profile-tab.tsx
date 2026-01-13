@@ -12,13 +12,10 @@ interface CustomerProfileTabProps {
   customer: Customer;
 }
 
-// Helper function to safely get BVN data (handles both possible API response structures)
 function getBvnData(customer: Customer) {
-  // Try both possible paths: customer.meta.kyc.bvn or customer.meta.bvn
   return customer.meta?.kyc?.bvn ?? customer.meta?.bvn ?? null;
 }
 
-// Helper function to check if KYC data is available
 function hasKycData(customer: Customer): boolean {
   const bvnData = getBvnData(customer);
   return !!(bvnData?.birthdate ?? bvnData?.firstname ?? bvnData?.lastname);
