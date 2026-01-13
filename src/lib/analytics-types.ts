@@ -470,3 +470,52 @@ export interface CountryAnalyticsApiResponse {
     dateRange: { from: string; to: string };
   };
 }
+
+// ============================================================================
+// Product Analytics Types
+// ============================================================================
+
+export interface ProductAnalyticsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    dau?: Array<{ date: string; count: number }>;
+    wau?: Array<{ date: string; count: number }>;
+    mau?: Array<{ date: string; count: number }>;
+  };
+}
+
+// ============================================================================
+// Transaction Analytics Types
+// ============================================================================
+
+export interface TransactionAnalyticsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    frequency?: Array<{ date: string; count: number }>;
+    averageValue?: number;
+    failedVsSuccessful?: {
+      successful: number;
+      failed: number;
+      total: number;
+    };
+  };
+}
+
+// ============================================================================
+// Revenue Analytics Types
+// ============================================================================
+
+export interface RevenueAnalyticsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    gtv?: number;
+    arpu?: number;
+    revenuePerCorridor?: Array<{
+      corridor: string;
+      revenue: number;
+    }>;
+  };
+}
