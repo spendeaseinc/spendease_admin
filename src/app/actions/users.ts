@@ -257,10 +257,6 @@ export async function exportUsers(params: FetchUsersParams = {}): Promise<Blob |
   }
 }
 
-// ============================================
-// Customer Detail Page Actions
-// ============================================
-
 /**
  * Fetch transactions for a specific customer with filtering and pagination
  */
