@@ -38,12 +38,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PAIR_COLORS, CURRENCY_PAIRS } from "@/lib/analytics-data";
-import { SUPPORTED_CURRENCIES, USD_EXCHANGE_RATES, type ChartData, type TimeFrame, type CurrencyFilter, type PairFilter, type SupportedCurrency } from "@/lib/analytics-types";
+import { SUPPORTED_CURRENCIES, type ChartData, type TimeFrame, type CurrencyFilter, type PairFilter, type SupportedCurrency } from "@/lib/analytics-types";
 import { cn } from "@/lib/utils";
 
 import { DemoDataBadge } from "./demo-data-badge";
 
-// Time frames with actual historical data points
 const TIME_FRAME_POINTS: Record<TimeFrame, number> = {
   weekly: 1,
   monthly: 1,
@@ -92,11 +91,17 @@ interface ChartCardProps {
   currencyFilter: CurrencyFilter;
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  NGN: "₦",
+  KES: "KES ",
+  GHS: "GH₵",
+  ZAR: "R",
+}
+
 function CustomTooltip({
   active,
   payload,
   label,
-  currencyFilter,
 }: {
   active?: boolean
   payload?: Array<{ value: number; dataKey: string; color: string; name: string }>
@@ -105,15 +110,26 @@ function CustomTooltip({
 }) {
   if (!active || !payload || payload.length === 0) return null
 
+  const currencyCode = label?.split(" ")[0] ?? ""
+  const isLocalCurrency = SUPPORTED_CURRENCIES.includes(currencyCode as SupportedCurrency)
+  const currencySymbol = CURRENCY_SYMBOLS[currencyCode] || ""
+
+  // Check if this is a count/volume metric vs a monetary amount
+  const isCountMetric = (dataKey: string, name: string) => {
+    const key = dataKey.toLowerCase()
+    const n = name.toLowerCase()
+    return key.includes("volume") || key.includes("count") || key.includes("total tx") ||
+           n.includes("volume") || n.includes("count") || n.includes("transactions")
+  }
+
+  // Check if this is a percentage metric
+  const isPercentageMetric = (dataKey: string) => {
+    return dataKey.includes("success") || dataKey.includes("failure") || dataKey.includes("pending") ||
+           dataKey === "Success" || dataKey === "Failure" || dataKey === "Pending"
+  }
+
   const formatValue = (value: number, dataKey: string) => {
-    if (
-      dataKey.includes("success") ||
-      dataKey.includes("failure") ||
-      dataKey.includes("pending") ||
-      dataKey === "Success" ||
-      dataKey === "Failure" ||
-      dataKey === "Pending"
-    ) {
+    if (isPercentageMetric(dataKey)) {
       return `${value.toFixed(1)}%`
     }
     if (value >= 1000000) return `${(value / 1000000).toFixed(2)}M`
@@ -124,18 +140,30 @@ function CustomTooltip({
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg">
       <p className="mb-2 text-sm font-semibold text-foreground">
-        {label} {currencyFilter === "all" && "(USD)"}
+        {label}
       </p>
-      {payload.map((entry, index) => (
-        <div key={index} className="flex items-center gap-2 text-sm">
-          <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: entry.color }} />
-          <span className="text-muted-foreground">{entry.name}:</span>
-          <span className="font-medium text-foreground">
-            {formatValue(entry.value, entry.dataKey)}
-            {currencyFilter === "all" && !entry.dataKey.includes("success") && !entry.dataKey.includes("failure") && !entry.dataKey.includes("pending") && entry.dataKey !== "Success" && entry.dataKey !== "Failure" && entry.dataKey !== "Pending" && " USD"}
-          </span>
-        </div>
-      ))}
+      {payload.map((entry, index) => {
+        const isCount = isCountMetric(entry.dataKey, entry.name)
+        const isPercent = isPercentageMetric(entry.dataKey)
+        const formattedValue = formatValue(entry.value, entry.dataKey)
+
+        return (
+          <div key={index} className="flex items-center gap-2 text-sm">
+            <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: entry.color }} />
+            <span className="text-muted-foreground">{entry.name}:</span>
+            <span className="font-medium text-foreground">
+              {/* For count/volume metrics, show as plain number with "tx" suffix */}
+              {isCount && !isPercent && `${formattedValue} tx`}
+              {/* For amount/sum metrics, show with currency symbol */}
+              {!isCount && !isPercent && isLocalCurrency && currencySymbol && `${currencySymbol}${formattedValue}`}
+              {!isCount && !isPercent && isLocalCurrency && !currencySymbol && `${formattedValue} ${currencyCode}`}
+              {!isCount && !isPercent && !isLocalCurrency && formattedValue}
+              {/* For percentage metrics, just show the value */}
+              {isPercent && formattedValue}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -245,12 +273,8 @@ export function ChartCard({ chart, isEditMode, currencyFilter }: ChartCardProps)
   const currencies = chart.currencies ?? [];
   const pairs = chart.pairs ?? CURRENCY_PAIRS;
 
-  // Helper to convert currency value to USD
-  const convertToUSD = (value: number, currency: SupportedCurrency): number => {
-    return value / USD_EXCHANGE_RATES[currency];
-  };
-
   // Filter and transform chart data based on currency filter
+  // Charts always show LOCAL CURRENCIES - no USD conversion
   const getFilteredChartData = useMemo(() => {
     let data = chart.isSnapshot ? chart.data : chart.data.slice(-TIME_FRAME_POINTS[timeFrame]);
 
@@ -269,24 +293,9 @@ export function ChartCard({ chart, isEditMode, currencyFilter }: ChartCardProps)
     if (isMetricBasedChart && currencyFilter !== "all") {
       // Filter to show only selected currency
       data = data.filter((item) => item.name === currencyFilter);
-    } else if (isMetricBasedChart && currencyFilter === "all") {
-      // Convert all currency values to USD
-      data = data.map((item) => {
-        const currency = item.name as SupportedCurrency;
-        if (!SUPPORTED_CURRENCIES.includes(currency)) return item;
-
-        const convertedItem: typeof item = { ...item };
-        dataKeys.forEach((key) => {
-          const value = convertedItem[key];
-          if (typeof value === "number") {
-            convertedItem[key] = convertToUSD(value, currency);
-          }
-        });
-        // Update name to show it's USD converted
-        convertedItem.name = `${currency} (USD)`;
-        return convertedItem;
-      });
     }
+    // When currencyFilter === "all", show ALL currencies in their LOCAL values (no USD conversion)
+    // The chart will display each currency bar with its native currency value
 
     return data;
   }, [chart.data, chart.isSnapshot, timeFrame, currencyFilter]);
