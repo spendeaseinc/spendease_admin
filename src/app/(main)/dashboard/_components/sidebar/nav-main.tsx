@@ -23,7 +23,6 @@ export function NavMain({ items }: NavMainProps) {
     return pathname.startsWith(itemUrl);
   };
 
-  // Flatten all groups into a single list of items
   const allItems = items.flatMap((group) => group.items);
 
   return (
