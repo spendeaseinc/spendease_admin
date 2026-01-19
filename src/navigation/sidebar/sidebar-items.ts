@@ -7,7 +7,6 @@ import {
   Bell,
   CircleDollarSign,
   LayoutGrid,
-  PauseCircle,
   Settings,
   ChartLine,
 } from "lucide-react";
