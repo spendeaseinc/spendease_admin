@@ -7,7 +7,6 @@ import {
   Bell,
   CircleDollarSign,
   LayoutGrid,
-  PauseCircle,
   Settings,
   ChartLine,
 } from "lucide-react";
@@ -77,11 +76,11 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/partner-balance",
         icon: CircleDollarSign,
       },
-      {
-        title: "Waitlist",
-        url: "/dashboard/waitlist",
-        icon: PauseCircle,
-      },
+      // {
+      //   title: "Waitlist",
+      //   url: "/dashboard/waitlist",
+      //   icon: PauseCircle,
+      // },
       {
         title: "Notifications",
         url: "/dashboard/notifications",

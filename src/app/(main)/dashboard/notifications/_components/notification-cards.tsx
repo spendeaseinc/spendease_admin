@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-commented-code */
 /* eslint-disable complexity */
 /* eslint-disable max-lines */
 /* eslint-disable prettier/prettier */
@@ -404,12 +403,9 @@ export default function NotificationCards({ stats }: NotificationCardsProps) {
   const uniquePercentage = total > 0 ? (unique / total) * 100 : 0;
   const generalPercentage = total > 0 ? (general / total) * 100 : 0;
 
-  // Calculate delivery stats
   const sent = stats?.sent ?? 0;
   const read = stats?.read ?? 0;
-  // const pending = stats?.pending ?? 0;
 
-  // Calculate approval stats
   const pendingApproval = stats?.pending_approval ?? 0;
   const approved = stats?.approved ?? 0;
   const rejected = stats?.rejected ?? 0;
