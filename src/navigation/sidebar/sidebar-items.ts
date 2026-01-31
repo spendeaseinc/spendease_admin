@@ -47,6 +47,11 @@ export const sidebarItems: NavGroup[] = [
         icon: LayoutGrid,
       },
       {
+        title: "Verifications",
+        url: "/dashboard/verifications",
+        icon: LayoutGrid,
+      },
+      {
         title: "Customers",
         url: "/dashboard/customers",
         icon: User,
