@@ -190,8 +190,8 @@ async function fetchWithAuth<T>(endpoint: string, accessToken: string): Promise<
 const CALC_DESCRIPTIONS = {
   // Revenue metrics
   grossRevenue: {
-    all: "Sum of all transaction fees collected across NGN, KES, GHS, ZAR, converted to USD using fixed exchange rates (NGN=1550, KES=153, GHS=15.2, ZAR=18.5)",
-    currency: (c: string) => `Total transaction fees collected from all successful ${c} transactions in the selected period`,
+    all: "Transaction fees + FX markup revenue across NGN, KES, GHS, ZAR, converted to USD using fixed exchange rates (NGN=1550, KES=153, GHS=15.2, ZAR=18.5)",
+    currency: (c: string) => `Transaction fees plus FX markup profit from all successful ${c} transactions in the selected period`,
   },
   netRevenue: {
     all: "Gross revenue minus operational costs, converted to USD from all supported currencies",
@@ -206,8 +206,8 @@ const CALC_DESCRIPTIONS = {
     currency: (c: string) => `Profit from rate markup when users convert to ${c}. Calculated as: original Fincra rate amount - marked up rate amount`,
   },
   netProfit: {
-    all: "Net Revenue + FX Sales across all currencies, converted to USD",
-    currency: (c: string) => `Combined profit from ${c}: transaction fees + FX markup profit`,
+    all: "Net revenue across all currencies, converted to USD. Currently mirrors gross revenue because provider costs are not tracked separately yet",
+    currency: (c: string) => `Net revenue from ${c}. Currently mirrors gross revenue (transaction fees + FX markup) until provider cost tracking is added`,
   },
   transactionCount: {
     all: "Total count of successful transactions across all supported currencies",
@@ -308,7 +308,7 @@ function transformProfitAnalyticsToCards(
       value: formatCurrency(usdTotals.grossRevenue, "USD"),
       change: "+12.5%",
       trend: "up" as const,
-      subtitle: "All currencies • Last 30 days",
+      subtitle: "Fees + FX markup • Last 30 days",
       layout: "compact" as const,
       isDemoData: false,
       currency: "all",
@@ -383,7 +383,7 @@ function transformProfitAnalyticsToCards(
         value: formatCurrency(currencyData.grossRevenue, currency),
         change: "+12.5%",
         trend: "up" as const,
-        subtitle: `Total fees • ${currency}`,
+        subtitle: `Fees + FX markup • ${currency}`,
         layout: "default" as const,
         isDemoData: false,
         currency,
@@ -1424,8 +1424,8 @@ function transformMonthlyProfitToCharts(
   charts.push({
     id: "net-profit-trend-historical",
     title: "Net Profit Trend",
-    subtitle: "Monthly combined net profit by currency",
-    description: "Combined net profit (transaction fees + FX sales) per month, shown in local currency.",
+    subtitle: "Monthly net revenue by currency",
+    description: "Net revenue per month, shown in local currency. Currently this equals transaction fees + FX sales (provider costs pending).",
     type: "line" as const,
     currencies: SUPPORTED_CURRENCIES,
     showLegend: true,
