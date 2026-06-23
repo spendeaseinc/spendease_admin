@@ -1,16 +1,19 @@
-/* eslint-disable prettier/prettier */
 /* eslint-disable security/detect-object-injection */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
-import { Info, LayoutGrid } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+import { CalendarDays, Info, LayoutGrid } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { METRICS_DATE_RANGE_OPTIONS, type MetricsDateRange } from "@/lib/analytics-date-range";
 import {
   CURRENCY_INFO,
   SUPPORTED_CURRENCIES,
@@ -27,9 +30,14 @@ import { MetricCardsGrid } from "./metric-cards-grid";
 interface MetricsCardsProps {
   metricCards: MetricCardData[];
   charts: ChartData[];
+  selectedRange: MetricsDateRange;
 }
 
-export default function MetricsCards({ metricCards, charts }: MetricsCardsProps) {
+export default function MetricsCards({ metricCards, charts, selectedRange }: MetricsCardsProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const [isEditMode, setIsEditMode] = useState(false);
   const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>("all");
 
@@ -54,6 +62,15 @@ export default function MetricsCards({ metricCards, charts }: MetricsCardsProps)
     return `1 USD = ${rate.toLocaleString()} ${currencyFilter}`;
   }, [currencyFilter]);
 
+  const handleRangeChange = (range: string) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("range", range);
+
+    startTransition(() => {
+      router.push(`${pathname}?${nextParams.toString()}`);
+    });
+  };
+
   return (
     <Tabs defaultValue="overview">
       <div className="mb-6 flex items-center justify-between md:mb-4">
@@ -62,16 +79,32 @@ export default function MetricsCards({ metricCards, charts }: MetricsCardsProps)
           <TabsTrigger value="charts">Charts</TabsTrigger>
         </TabsList>
 
-        {/* Edit Mode Toggle */}
-        <Button
-          variant={isEditMode ? "default" : "outline"}
-          size="icon"
-          onClick={() => setIsEditMode(!isEditMode)}
-          className="transition-all"
-          title={isEditMode ? "Exit edit mode" : "Enable drag to reorder"}
-        >
-          <LayoutGrid className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={selectedRange} onValueChange={handleRangeChange} disabled={isPending}>
+            <SelectTrigger className="h-9 w-[150px] gap-2">
+              <CalendarDays className="h-4 w-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {METRICS_DATE_RANGE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Edit Mode Toggle */}
+          <Button
+            variant={isEditMode ? "default" : "outline"}
+            size="icon"
+            onClick={() => setIsEditMode(!isEditMode)}
+            className="transition-all"
+            title={isEditMode ? "Exit edit mode" : "Enable drag to reorder"}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <TabsContent className="@container/main flex flex-col gap-4" value="overview">
@@ -112,7 +145,7 @@ export default function MetricsCards({ metricCards, charts }: MetricsCardsProps)
               <TooltipContent className="max-w-xs">
                 <div className="space-y-1">
                   <p className="font-medium">Fixed USD Exchange Rates</p>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-muted-foreground text-xs">
                     {SUPPORTED_CURRENCIES.map((c) => (
                       <div key={c}>
                         {CURRENCY_INFO[c].flag} {c}: 1 USD = {USD_EXCHANGE_RATES[c].toLocaleString()} {c}
@@ -166,7 +199,7 @@ export default function MetricsCards({ metricCards, charts }: MetricsCardsProps)
               <TooltipContent className="max-w-xs">
                 <div className="space-y-1">
                   <p className="font-medium">Fixed USD Exchange Rates</p>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-muted-foreground text-xs">
                     {SUPPORTED_CURRENCIES.map((c) => (
                       <div key={c}>
                         {CURRENCY_INFO[c].flag} {c}: 1 USD = {USD_EXCHANGE_RATES[c].toLocaleString()} {c}

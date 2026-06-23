@@ -479,9 +479,9 @@ export interface ProductAnalyticsResponse {
   status: boolean;
   message: string;
   data: {
-    dau?: Array<{ date: string; count: number }>;
-    wau?: Array<{ date: string; count: number }>;
-    mau?: Array<{ date: string; count: number }>;
+    dau?: number | Array<{ date: string; count: number }>;
+    wau?: number | Array<{ date: string; count: number }>;
+    mau?: number | Array<{ date: string; count: number }>;
   };
 }
 
@@ -494,6 +494,8 @@ export interface TransactionAnalyticsResponse {
   message: string;
   data: {
     frequency?: Array<{ date: string; count: number }>;
+    totalTransactions?: number;
+    distribution?: Array<{ transaction_count?: number | string; active_days?: number | string }>;
     averageValue?: number;
     failedVsSuccessful?: {
       successful: number;
@@ -512,6 +514,13 @@ export interface RevenueAnalyticsResponse {
   message: string;
   data: {
     gtv?: number;
+    totalGTV?: number;
+    totalTransactions?: number;
+    byCurrency?: Array<{
+      currency: string;
+      transaction_count: number | string;
+      total_volume: number | string;
+    }>;
     arpu?: number;
     revenuePerCorridor?: Array<{
       corridor: string;

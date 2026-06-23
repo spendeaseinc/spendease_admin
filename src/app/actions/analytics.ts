@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* eslint-disable prettier/prettier */
 /* eslint-disable security/detect-object-injection */
 /* eslint-disable max-lines */
 /* eslint-disable complexity */
 "use server";
 
 import { chartsData as dummyChartsData, metricCardsData as dummyMetricCardsData } from "@/lib/analytics-data";
+import type { MetricsDateRangeParams } from "@/lib/analytics-date-range";
 import {
   SUPPORTED_CURRENCIES,
   USD_EXCHANGE_RATES,
@@ -31,6 +31,8 @@ import type { ApiError } from "@/lib/types";
 import { getValueFromCookie } from "@/server/server-actions";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_ENDPOINT;
+
+type AnalyticsFetchParams = Pick<MetricsDateRangeParams, "dateFrom" | "dateTo" | "label">;
 
 // ============================================================================
 // General Metrics Whitelist - Metrics to show on main /dashboard/metrics page
@@ -187,15 +189,60 @@ async function fetchWithAuth<T>(endpoint: string, accessToken: string): Promise<
   }
 }
 
+function appendQueryParams(endpoint: string, params: Record<string, string | undefined>): string {
+  const queryParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      queryParams.set(key, value);
+    }
+  }
+
+  const queryString = queryParams.toString();
+  return queryString ? `${endpoint}?${queryString}` : endpoint;
+}
+
+function appendDateRange(endpoint: string, params?: AnalyticsFetchParams): string {
+  return appendQueryParams(endpoint, {
+    dateFrom: params?.dateFrom,
+    dateTo: params?.dateTo,
+  });
+}
+
+function appendDate(endpoint: string, date?: string): string {
+  return appendQueryParams(endpoint, { date });
+}
+
+function extractProductMetricCount(
+  result: EndpointResult<ProductAnalyticsResponse["data"]>,
+  key: "dau" | "wau" | "mau",
+): number {
+  if (!result.success) return 0;
+
+  const value = result.data?.[key];
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (Array.isArray(value) && value.length > 0) {
+    return value[value.length - 1]?.count ?? 0;
+  }
+
+  return 0;
+}
+
 const CALC_DESCRIPTIONS = {
   // Revenue metrics
   grossRevenue: {
     all: "Transaction fees + FX markup revenue across NGN, KES, GHS, ZAR, converted to USD using fixed exchange rates (NGN=1550, KES=153, GHS=15.2, ZAR=18.5)",
-    currency: (c: string) => `Transaction fees plus FX markup profit from all successful ${c} transactions in the selected period`,
+    currency: (c: string) =>
+      `Transaction fees plus FX markup profit from all successful ${c} transactions in the selected period`,
   },
   netRevenue: {
     all: "Gross revenue minus operational costs, converted to USD from all supported currencies",
-    currency: (c: string) => `Gross revenue from ${c} transactions minus any deducted costs (currently equal to gross as no cost data tracked)`,
+    currency: (c: string) =>
+      `Gross revenue from ${c} transactions minus any deducted costs (currently equal to gross as no cost data tracked)`,
   },
   transactionFees: {
     all: "Platform fees from all transactions across all currencies, converted to USD",
@@ -203,11 +250,13 @@ const CALC_DESCRIPTIONS = {
   },
   fxSales: {
     all: "Revenue from FX rate markup on currency conversions, converted to USD",
-    currency: (c: string) => `Profit from rate markup when users convert to ${c}. Calculated as: original Fincra rate amount - marked up rate amount`,
+    currency: (c: string) =>
+      `Profit from rate markup when users convert to ${c}. Calculated as: original Fincra rate amount - marked up rate amount`,
   },
   netProfit: {
     all: "Net revenue across all currencies, converted to USD. Currently mirrors gross revenue because provider costs are not tracked separately yet",
-    currency: (c: string) => `Net revenue from ${c}. Currently mirrors gross revenue (transaction fees + FX markup) until provider cost tracking is added`,
+    currency: (c: string) =>
+      `Net revenue from ${c}. Currently mirrors gross revenue (transaction fees + FX markup) until provider cost tracking is added`,
   },
   transactionCount: {
     all: "Total count of successful transactions across all supported currencies",
@@ -251,7 +300,8 @@ const CALC_DESCRIPTIONS = {
   topCustomer: "Customer with highest total transaction value in the period",
   senders: {
     all: "Count of unique users who initiated transactions across all currencies",
-    currency: (c: string) => `Unique users who initiated PayOut, CurrencySwap, Withdrawal or Transfer from ${c} wallets`,
+    currency: (c: string) =>
+      `Unique users who initiated PayOut, CurrencySwap, Withdrawal or Transfer from ${c} wallets`,
   },
   beneficiaries: {
     all: "Count of unique recipient accounts across all currencies",
@@ -264,6 +314,7 @@ const CALC_DESCRIPTIONS = {
 function transformProfitAnalyticsToCards(
   data: ProfitAnalyticsApiResponse["data"] | null,
   error?: string,
+  rangeLabel = "Selected period",
 ): MetricCardData[] {
   if (!data) {
     if (error) {
@@ -308,7 +359,7 @@ function transformProfitAnalyticsToCards(
       value: formatCurrency(usdTotals.grossRevenue, "USD"),
       change: "+12.5%",
       trend: "up" as const,
-      subtitle: "Fees + FX markup • Last 30 days",
+      subtitle: `Fees + FX markup • ${rangeLabel}`,
       layout: "compact" as const,
       isDemoData: false,
       currency: "all",
@@ -344,7 +395,7 @@ function transformProfitAnalyticsToCards(
       value: formatNumber(usdTotals.transactionCount),
       change: "+10.5%",
       trend: "up" as const,
-      subtitle: "All currencies • Last 30 days",
+      subtitle: `All currencies • ${rangeLabel}`,
       layout: "compact" as const,
       isDemoData: false,
       currency: "all",
@@ -356,7 +407,7 @@ function transformProfitAnalyticsToCards(
       value: formatCurrency(usdTotals.totalVolume, "USD"),
       change: "+8.7%",
       trend: "up" as const,
-      subtitle: "Sum of all transaction values • Last 30 days",
+      subtitle: `Sum of all transaction values • ${rangeLabel}`,
       layout: "default" as const,
       isDemoData: false,
       currency: "all",
@@ -419,7 +470,7 @@ function transformProfitAnalyticsToCards(
         value: formatNumber(currencyData.transactionCount),
         change: "+10.5%",
         trend: "up" as const,
-        subtitle: `${currency} transactions • Last 30 days`,
+        subtitle: `${currency} transactions • ${rangeLabel}`,
         layout: "compact" as const,
         isDemoData: false,
         currency,
@@ -431,7 +482,7 @@ function transformProfitAnalyticsToCards(
         value: formatCurrency(currencyData.totalVolume, currency),
         change: "+8.7%",
         trend: "up" as const,
-        subtitle: `Sum of ${currency} transaction values • Last 30 days`,
+        subtitle: `Sum of ${currency} transaction values • ${rangeLabel}`,
         layout: "default" as const,
         isDemoData: false,
         currency,
@@ -516,9 +567,7 @@ function transformCurrencyPairAnalyticsToCards(
     if (currencyPairs.length > 0) {
       bestProfitPair = currencyPairs.reduce((best, curr) => (curr.totalProfit > best.totalProfit ? curr : best));
       bestSuccessPair = currencyPairs.reduce((best, curr) => (curr.successRate > best.successRate ? curr : best));
-      worstFailurePair = currencyPairs.reduce((best, curr) =>
-        curr.failureRate > best.failureRate ? curr : best,
-      );
+      worstFailurePair = currencyPairs.reduce((best, curr) => (curr.failureRate > best.failureRate ? curr : best));
     }
 
     const totalVolume = currencyPairs.reduce((sum, p) => sum + p.totalVolume, 0);
@@ -758,6 +807,7 @@ function transformWalletAnalyticsToCards(
 function transformCustomerAnalyticsToCards(
   data: CustomerAnalyticsApiResponse["data"] | null,
   error?: string,
+  rangeLabel = "Selected period",
 ): MetricCardData[] {
   if (!data) {
     if (error) {
@@ -780,9 +830,7 @@ function transformCustomerAnalyticsToCards(
 
   const topBeneficiaries =
     supportedBeneficiaries.length > 0
-      ? supportedBeneficiaries.reduce((max, curr) =>
-        curr.uniqueBeneficiaries > max.uniqueBeneficiaries ? curr : max,
-      )
+      ? supportedBeneficiaries.reduce((max, curr) => (curr.uniqueBeneficiaries > max.uniqueBeneficiaries ? curr : max))
       : null;
 
   const totalSenders = supportedSenders.reduce((sum, s) => sum + s.uniqueSenders, 0);
@@ -794,7 +842,7 @@ function transformCustomerAnalyticsToCards(
       title: "Customer Lifetime Value",
       value: formatCurrency(lifetimeValue.averageCLV, "NGN"),
       badge: "avg. CLV",
-      subtitle: "Last 30 days",
+      subtitle: rangeLabel,
       layout: "detailed" as const,
       size: "large" as const,
       trend: "up" as const,
@@ -832,7 +880,9 @@ function transformCustomerAnalyticsToCards(
       value: formatNumber(totalSenders),
       change: "+3.7%",
       trend: "up" as const,
-      subtitle: topSenders ? `${topSenders.currency} leads with ${formatNumber(topSenders.uniqueSenders)}` : "All currencies",
+      subtitle: topSenders
+        ? `${topSenders.currency} leads with ${formatNumber(topSenders.uniqueSenders)}`
+        : "All currencies",
       layout: "default" as const,
       isDemoData: false,
       currency: "all",
@@ -844,7 +894,9 @@ function transformCustomerAnalyticsToCards(
       value: formatNumber(totalBeneficiaries),
       change: "0%",
       trend: "neutral" as const,
-      subtitle: topBeneficiaries ? `${topBeneficiaries.currency} leads with ${formatNumber(topBeneficiaries.uniqueBeneficiaries)}` : "All currencies",
+      subtitle: topBeneficiaries
+        ? `${topBeneficiaries.currency} leads with ${formatNumber(topBeneficiaries.uniqueBeneficiaries)}`
+        : "All currencies",
       layout: "default" as const,
       isDemoData: false,
       currency: "all",
@@ -868,7 +920,7 @@ function transformCustomerAnalyticsToCards(
       value: formatCurrency(lifetimeValue.averageRevenuePerCustomer, "NGN"),
       change: "+5.8%",
       trend: "up" as const,
-      subtitle: "ARPU • Last 30 days",
+      subtitle: `ARPU • ${rangeLabel}`,
       layout: "compact" as const,
       isDemoData: false,
       currency: "all",
@@ -952,17 +1004,17 @@ function transformCountryAnalyticsToCards(
   const countryCode = topCountry.sending_country ?? topCountry.receiving_country ?? "Unknown";
 
   const countryNames: Record<string, string> = {
-    "NG": "Nigeria",
-    "KE": "Kenya",
-    "GH": "Ghana",
-    "ZA": "South Africa",
+    NG: "Nigeria",
+    KE: "Kenya",
+    GH: "Ghana",
+    ZA: "South Africa",
   };
 
   const countryToCurrency: Record<string, SupportedCurrency> = {
-    "NG": "NGN",
-    "KE": "KES",
-    "GH": "GHS",
-    "ZA": "ZAR",
+    NG: "NGN",
+    KE: "KES",
+    GH: "GHS",
+    ZA: "ZAR",
   };
 
   const countryName = countryNames[countryCode] || countryCode;
@@ -1046,24 +1098,25 @@ function transformCountryAnalyticsToCharts(
   }>;
 
   const countryNames: Record<string, string> = {
-    "NG": "Nigeria",
-    "KE": "Kenya",
-    "GH": "Ghana",
-    "ZA": "South Africa",
+    NG: "Nigeria",
+    KE: "Kenya",
+    GH: "Ghana",
+    ZA: "South Africa",
   };
 
   const countryCurrencies: Record<string, string> = {
-    "NG": "NGN",
-    "KE": "KES",
-    "GH": "GHS",
-    "ZA": "ZAR",
+    NG: "NGN",
+    KE: "KES",
+    GH: "GHS",
+    ZA: "ZAR",
   };
 
   charts.push({
     id: "sending-volume-by-country",
     title: "Sending Volume by Country",
     subtitle: "Transaction count by sending country",
-    description: "Number of transactions initiated from each country. Higher volume indicates more active sender base in that country.",
+    description:
+      "Number of transactions initiated from each country. Higher volume indicates more active sender base in that country.",
     type: "bar" as const,
     currencies: [],
     showLegend: false,
@@ -1074,7 +1127,7 @@ function transformCountryAnalyticsToCharts(
       const name = countryNames[code] ?? code ?? "Unknown";
       return {
         name,
-        "Volume": Number(c.transaction_count) || 0,
+        Volume: Number(c.transaction_count) || 0,
       };
     }),
     isDemoData: false,
@@ -1084,7 +1137,8 @@ function transformCountryAnalyticsToCharts(
     id: "sending-amount-by-country",
     title: "Sending Amount by Country",
     subtitle: "Total amount sent by country (in local currencies)",
-    description: "Sum of all transaction amounts sent from each country. Note: Each country's amount is in its local currency (NGN, KES, GHS, ZAR).",
+    description:
+      "Sum of all transaction amounts sent from each country. Note: Each country's amount is in its local currency (NGN, KES, GHS, ZAR).",
     type: "bar" as const,
     currencies: [],
     showLegend: false,
@@ -1097,7 +1151,7 @@ function transformCountryAnalyticsToCharts(
       const labelName = currency ? `${name} (${currency})` : name;
       return {
         name: labelName,
-        "Amount": Math.round(Number(c.total_volume) || 0),
+        Amount: Math.round(Number(c.total_volume) || 0),
       };
     }),
     isDemoData: false,
@@ -1107,10 +1161,18 @@ function transformCountryAnalyticsToCharts(
 }
 
 const ALL_CURRENCY_PAIRS = [
-  "NGN→KES", "NGN→GHS", "NGN→ZAR",
-  "KES→NGN", "KES→GHS", "KES→ZAR",
-  "GHS→NGN", "GHS→KES", "GHS→ZAR",
-  "ZAR→NGN", "ZAR→KES", "ZAR→GHS",
+  "NGN→KES",
+  "NGN→GHS",
+  "NGN→ZAR",
+  "KES→NGN",
+  "KES→GHS",
+  "KES→ZAR",
+  "GHS→NGN",
+  "GHS→KES",
+  "GHS→ZAR",
+  "ZAR→NGN",
+  "ZAR→KES",
+  "ZAR→GHS",
 ];
 
 function transformToCharts(
@@ -1132,7 +1194,8 @@ function transformToCharts(
       id: "currency-revenue-snapshot",
       title: "Revenue by Currency",
       subtitle: "Current period revenue breakdown",
-      description: "Gross revenue, transaction fees, and FX sales for each currency. Data from profit-analytics endpoint.",
+      description:
+        "Gross revenue, transaction fees, and FX sales for each currency. Data from profit-analytics endpoint.",
       type: "bar" as const,
       currencies: SUPPORTED_CURRENCIES,
       showLegend: true,
@@ -1166,29 +1229,32 @@ function transformToCharts(
     console.warn("[Charts] No profit data available for revenue charts:", errors.profit);
   }
 
-  const supportedPairs = currencyPairData?.pairs?.filter(
-    (p) => isSupportedCurrency(p.sourceCurrency) && isSupportedCurrency(p.targetCurrency),
-  ) ?? [];
+  const supportedPairs =
+    currencyPairData?.pairs?.filter(
+      (p) => isSupportedCurrency(p.sourceCurrency) && isSupportedCurrency(p.targetCurrency),
+    ) ?? [];
 
   const pairDataMap = new Map(supportedPairs.map((p) => [p.pair, p]));
 
   const allPairsData = ALL_CURRENCY_PAIRS.map((pair) => {
     const existingData = pairDataMap.get(pair);
-    return existingData ?? {
-      pair,
-      sourceCurrency: pair.split("→")[0],
-      targetCurrency: pair.split("→")[1],
-      totalTransactions: 0,
-      successfulTransactions: 0,
-      failedTransactions: 0,
-      pendingTransactions: 0,
-      successRate: 0,
-      failureRate: 0,
-      pendingRate: 0,
-      totalVolume: 0,
-      totalProfit: 0,
-      averageTransactionValue: 0,
-    };
+    return (
+      existingData ?? {
+        pair,
+        sourceCurrency: pair.split("→")[0],
+        targetCurrency: pair.split("→")[1],
+        totalTransactions: 0,
+        successfulTransactions: 0,
+        failedTransactions: 0,
+        pendingTransactions: 0,
+        successRate: 0,
+        failureRate: 0,
+        pendingRate: 0,
+        totalVolume: 0,
+        totalProfit: 0,
+        averageTransactionValue: 0,
+      }
+    );
   });
 
   if (currencyPairData?.pairs) {
@@ -1201,7 +1267,8 @@ function transformToCharts(
       id: "transaction-status-snapshot",
       title: "Transaction Status Distribution",
       subtitle: "Current period transaction outcomes",
-      description: "Success, failure, and pending rates across all currency pair transactions. Data from currency-pair-analytics endpoint.",
+      description:
+        "Success, failure, and pending rates across all currency pair transactions. Data from currency-pair-analytics endpoint.",
       type: "status-bar" as const,
       currencies: [],
       showLegend: false,
@@ -1220,7 +1287,8 @@ function transformToCharts(
       demoDataMessage: supportedPairs.length === 0 ? "No transaction data for supported currency pairs" : undefined,
     });
 
-    const successByCurrency: Record<string, { successful: number; total: number; failed: number; pending: number }> = {};
+    const successByCurrency: Record<string, { successful: number; total: number; failed: number; pending: number }> =
+      {};
     for (const currency of SUPPORTED_CURRENCIES) {
       successByCurrency[currency] = { successful: 0, total: 0, failed: 0, pending: 0 };
     }
@@ -1238,7 +1306,8 @@ function transformToCharts(
       id: "successful-tx-by-currency",
       title: "Transaction Status by Currency Origin",
       subtitle: "Successful, failed, and pending transactions by sender currency",
-      description: "Number of successful, failed, and pending transactions grouped by the sender's currency. Shows which currencies have the most successful transaction completions.",
+      description:
+        "Number of successful, failed, and pending transactions grouped by the sender's currency. Shows which currencies have the most successful transaction completions.",
       type: "bar" as const,
       currencies: SUPPORTED_CURRENCIES,
       showLegend: true,
@@ -1246,9 +1315,9 @@ function transformToCharts(
       isSnapshot: true,
       data: SUPPORTED_CURRENCIES.map((currency) => ({
         name: currency,
-        "Successful": successByCurrency[currency]?.successful ?? 0,
-        "Failed": successByCurrency[currency]?.failed ?? 0,
-        "Pending": successByCurrency[currency]?.pending ?? 0,
+        Successful: successByCurrency[currency]?.successful ?? 0,
+        Failed: successByCurrency[currency]?.failed ?? 0,
+        Pending: successByCurrency[currency]?.pending ?? 0,
       })),
       isDemoData: supportedPairs.length === 0,
       demoDataReason: supportedPairs.length === 0 ? "no_data" : undefined,
@@ -1260,7 +1329,8 @@ function transformToCharts(
       id: "pair-status-snapshot",
       title: "Currency Pair Success Rates",
       subtitle: "Success vs Failure rates by corridor (all 12 pairs)",
-      description: "Transaction success and failure rates for each currency pair corridor. Pairs with 0 transactions have not been used yet.",
+      description:
+        "Transaction success and failure rates for each currency pair corridor. Pairs with 0 transactions have not been used yet.",
       type: "pair-status" as const,
       currencies: [],
       pairs: ALL_CURRENCY_PAIRS,
@@ -1276,7 +1346,8 @@ function transformToCharts(
       })),
       isDemoData: supportedPairs.length === 0,
       demoDataReason: supportedPairs.length === 0 ? "no_data" : undefined,
-      demoDataMessage: supportedPairs.length === 0 ? "No transaction data available - all pairs showing zero" : undefined,
+      demoDataMessage:
+        supportedPairs.length === 0 ? "No transaction data available - all pairs showing zero" : undefined,
     });
 
     // Pair volume chart - show ALL pairs
@@ -1284,23 +1355,30 @@ function transformToCharts(
       id: "pair-volume-snapshot",
       title: "Currency Pair Transaction Volume",
       subtitle: "Transaction count by corridor (all 12 pairs)",
-      description: "Number of transactions processed through each currency pair corridor. Zero means no transactions yet for that corridor.",
+      description:
+        "Number of transactions processed through each currency pair corridor. Zero means no transactions yet for that corridor.",
       type: "pair-bar" as const,
       currencies: [],
       pairs: ALL_CURRENCY_PAIRS,
       showLegend: false,
       hasPairLegend: true,
       isSnapshot: true,
-      data: [{
-        name: "Current Period",
-        ...allPairsData.reduce((acc, p) => ({
-          ...acc,
-          [p.pair]: p.totalTransactions,
-        }), {}),
-      }],
+      data: [
+        {
+          name: "Current Period",
+          ...allPairsData.reduce(
+            (acc, p) => ({
+              ...acc,
+              [p.pair]: p.totalTransactions,
+            }),
+            {},
+          ),
+        },
+      ],
       isDemoData: supportedPairs.length === 0,
       demoDataReason: supportedPairs.length === 0 ? "no_data" : undefined,
-      demoDataMessage: supportedPairs.length === 0 ? "No transaction data available - all pairs showing zero" : undefined,
+      demoDataMessage:
+        supportedPairs.length === 0 ? "No transaction data available - all pairs showing zero" : undefined,
     });
   } else if (errors.currencyPair) {
     // No demo fallback - just log warning
@@ -1315,7 +1393,8 @@ function transformToCharts(
       id: "wallet-distribution-snapshot",
       title: "Wallet Distribution by Currency",
       subtitle: "Active vs Inactive wallets",
-      description: "Current wallet distribution showing active and inactive wallets for each supported currency. Data from wallet-analytics endpoint.",
+      description:
+        "Current wallet distribution showing active and inactive wallets for each supported currency. Data from wallet-analytics endpoint.",
       type: "bar" as const,
       currencies: [], // Empty to prevent currency formatting
       showLegend: true,
@@ -1334,7 +1413,8 @@ function transformToCharts(
       id: "balance-distribution-snapshot",
       title: "Balance Distribution by Currency",
       subtitle: "Total and average balances",
-      description: "Total balance held in wallets for each currency. Shows the liquidity distribution across the platform.",
+      description:
+        "Total balance held in wallets for each currency. Shows the liquidity distribution across the platform.",
       type: "bar" as const,
       currencies: [], // Empty to prevent forced USD formatting
       showLegend: true,
@@ -1384,7 +1464,8 @@ function transformMonthlyProfitToCharts(
     id: "transaction-volume-trend-historical",
     title: "Transaction Volume Trend",
     subtitle: "Monthly transaction count by currency",
-    description: "Number of successful transactions per month, broken down by currency. Data from profit-analytics/monthly endpoint.",
+    description:
+      "Number of successful transactions per month, broken down by currency. Data from profit-analytics/monthly endpoint.",
     type: "area" as const,
     currencies: SUPPORTED_CURRENCIES,
     showLegend: true,
@@ -1425,7 +1506,8 @@ function transformMonthlyProfitToCharts(
     id: "net-profit-trend-historical",
     title: "Net Profit Trend",
     subtitle: "Monthly net revenue by currency",
-    description: "Net revenue per month, shown in local currency. Currently this equals transaction fees + FX sales (provider costs pending).",
+    description:
+      "Net revenue per month, shown in local currency. Currently this equals transaction fees + FX sales (provider costs pending).",
     type: "line" as const,
     currencies: SUPPORTED_CURRENCIES,
     showLegend: true,
@@ -1474,7 +1556,7 @@ function transformMonthlyProfitToCharts(
  * Fetches from all 6 API endpoints in parallel and transforms the data.
  * Falls back to dummy data for any endpoint that fails.
  */
-export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError> {
+export async function fetchAnalyticsData(params?: AnalyticsFetchParams): Promise<AnalyticsResponse | ApiError> {
   try {
     const accessToken = await getValueFromCookie("accessToken");
 
@@ -1485,6 +1567,8 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         unauthorized: true,
       };
     }
+
+    const rangeLabel = params?.label ?? "Selected period";
 
     // Fetch all endpoints in parallel
     // Using correct backend routes based on deployed API structure
@@ -1501,22 +1585,49 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
       transactionFreqResult,
       gtvResult,
     ] = await Promise.all([
-      fetchWithAuth<ProfitAnalyticsApiResponse["data"]>("/api/admin/analytics/profit", accessToken),
+      fetchWithAuth<ProfitAnalyticsApiResponse["data"]>(
+        appendDateRange("/api/admin/analytics/profit", params),
+        accessToken,
+      ),
       fetchWithAuth<CurrencyPairAnalyticsApiResponse["data"]>(
-        "/api/admin/analytics/currency-pairs",
+        appendDateRange("/api/admin/analytics/currency-pairs", params),
         accessToken,
       ),
       fetchWithAuth<WalletAnalyticsApiResponse["data"]>("/api/admin/analytics/wallets", accessToken),
-      fetchWithAuth<CustomerAnalyticsApiResponse["data"]>("/api/admin/analytics/customers", accessToken),
+      fetchWithAuth<CustomerAnalyticsApiResponse["data"]>(
+        appendDateRange("/api/admin/analytics/customers", params),
+        accessToken,
+      ),
       // Using corridors API for country data
-      fetchWithAuth<CountryAnalyticsApiResponse["data"]>("/api/admin/corridors/top-sending-countries", accessToken),
-      fetchWithAuth<CountryAnalyticsApiResponse["data"]>("/api/admin/corridors/top-receiving-countries", accessToken),
+      fetchWithAuth<CountryAnalyticsApiResponse["data"]>(
+        appendDateRange("/api/admin/corridors/top-sending-countries", params),
+        accessToken,
+      ),
+      fetchWithAuth<CountryAnalyticsApiResponse["data"]>(
+        appendDateRange("/api/admin/corridors/top-receiving-countries", params),
+        accessToken,
+      ),
       // New Analytics APIs
-      fetchWithAuth<ProductAnalyticsResponse["data"]>("/api/admin/analytics/product/dau", accessToken),
-      fetchWithAuth<ProductAnalyticsResponse["data"]>("/api/admin/analytics/product/wau", accessToken),
-      fetchWithAuth<ProductAnalyticsResponse["data"]>("/api/admin/analytics/product/mau", accessToken),
-      fetchWithAuth<TransactionAnalyticsResponse["data"]>("/api/admin/analytics/transaction/frequency", accessToken),
-      fetchWithAuth<RevenueAnalyticsResponse["data"]>("/api/admin/analytics/revenue/gtv", accessToken),
+      fetchWithAuth<ProductAnalyticsResponse["data"]>(
+        appendDate("/api/admin/analytics/product/dau", params?.dateTo),
+        accessToken,
+      ),
+      fetchWithAuth<ProductAnalyticsResponse["data"]>(
+        appendDate("/api/admin/analytics/product/wau", params?.dateTo),
+        accessToken,
+      ),
+      fetchWithAuth<ProductAnalyticsResponse["data"]>(
+        appendDate("/api/admin/analytics/product/mau", params?.dateTo),
+        accessToken,
+      ),
+      fetchWithAuth<TransactionAnalyticsResponse["data"]>(
+        appendDateRange("/api/admin/analytics/transaction/frequency", params),
+        accessToken,
+      ),
+      fetchWithAuth<RevenueAnalyticsResponse["data"]>(
+        appendDateRange("/api/admin/analytics/revenue/gtv", params),
+        accessToken,
+      ),
     ]);
 
     // Collect errors for documentation and detailed logging
@@ -1571,7 +1682,10 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
 
     // Summary log for debugging
     if (apiErrors.length > 0) {
-      console.warn(`[General Metrics] ${apiErrors.length} API endpoint(s) failed:`, apiErrors.map(e => e.endpoint));
+      console.warn(
+        `[General Metrics] ${apiErrors.length} API endpoint(s) failed:`,
+        apiErrors.map((e) => e.endpoint),
+      );
     } else {
       console.log("[General Metrics] All API endpoints succeeded");
     }
@@ -1580,6 +1694,7 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
     const profitCards = transformProfitAnalyticsToCards(
       profitResult.success ? (profitResult.data ?? null) : null,
       profitResult.error,
+      rangeLabel,
     );
     const currencyPairCards = transformCurrencyPairAnalyticsToCards(
       currencyPairResult.success ? (currencyPairResult.data ?? null) : null,
@@ -1592,6 +1707,7 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
     const customerCards = transformCustomerAnalyticsToCards(
       customerResult.success ? (customerResult.data ?? null) : null,
       customerResult.error,
+      rangeLabel,
     );
     const countryCards = transformCountryAnalyticsToCards(
       topSendingCountriesResult.success ? (topSendingCountriesResult.data ?? null) : null,
@@ -1603,36 +1719,49 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
     // ========================================================================
 
     // Extract Product Metrics
-    const dau = dauResult.success && dauResult.data?.dau && dauResult.data.dau.length > 0
-      ? dauResult.data.dau[dauResult.data.dau.length - 1].count
-      : 0;
-
-    const wau = wauResult.success && wauResult.data?.wau && wauResult.data.wau.length > 0
-      ? wauResult.data.wau[wauResult.data.wau.length - 1].count
-      : 0;
-
-    const mau = mauResult.success && mauResult.data?.mau && mauResult.data.mau.length > 0
-      ? mauResult.data.mau[mauResult.data.mau.length - 1].count
-      : 0;
+    const dau = extractProductMetricCount(dauResult, "dau");
+    const wau = extractProductMetricCount(wauResult, "wau");
+    const mau = extractProductMetricCount(mauResult, "mau");
 
     // Extract Revenue/Transaction Metrics
-    const gtv = gtvResult.success && typeof gtvResult.data?.gtv === 'number' ? gtvResult.data.gtv : 0;
+    const gtv =
+      gtvResult.success && Array.isArray(gtvResult.data?.byCurrency)
+        ? gtvResult.data.byCurrency.reduce((sum, item) => {
+            const currency = item.currency;
+            const totalVolume = Number(item.total_volume ?? 0);
+            return isSupportedCurrency(currency) ? sum + convertToUSD(totalVolume, currency) : sum + totalVolume;
+          }, 0)
+        : gtvResult.success && typeof gtvResult.data?.totalGTV === "number"
+          ? gtvResult.data.totalGTV
+          : gtvResult.success && typeof gtvResult.data?.gtv === "number"
+            ? gtvResult.data.gtv
+            : 0;
 
     // Transaction Frequency returns array of { date, count }. Sum them or take latest?
     // Usually "frequency" implies over time. We want "Total Transactions".
     // If it returns a list, we might need to sum it for the period.
     // Assuming it returns daily counts.
     let totalTransactions = 0;
-    if (transactionFreqResult.success && transactionFreqResult.data?.frequency) {
+    if (gtvResult.success && typeof gtvResult.data?.totalTransactions === "number") {
+      totalTransactions = gtvResult.data.totalTransactions;
+    } else if (transactionFreqResult.success && typeof transactionFreqResult.data?.totalTransactions === "number") {
+      totalTransactions = transactionFreqResult.data.totalTransactions;
+    } else if (transactionFreqResult.success && transactionFreqResult.data?.distribution) {
+      totalTransactions = transactionFreqResult.data.distribution.reduce(
+        (sum, item) => sum + Number(item.transaction_count ?? 0),
+        0,
+      );
+    } else if (transactionFreqResult.success && transactionFreqResult.data?.frequency) {
       totalTransactions = transactionFreqResult.data.frequency.reduce((sum, item) => sum + (item.count || 0), 0);
     }
 
     // Derived Metrics
     const avgTransactionValue = totalTransactions > 0 ? gtv / totalTransactions : 0;
 
-    const totalCustomers = customerResult.success && customerResult.data?.lifetimeValue?.totalCustomers
-      ? customerResult.data.lifetimeValue.totalCustomers
-      : 0;
+    const totalCustomers =
+      customerResult.success && customerResult.data?.lifetimeValue?.totalCustomers
+        ? customerResult.data.lifetimeValue.totalCustomers
+        : 0;
 
     const avgTransactionsPerCustomer = totalCustomers > 0 ? totalTransactions / totalCustomers : 0;
 
@@ -1645,7 +1774,7 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         trend: "neutral",
         subtitle: "Unique users today",
         isDemoData: false, // 0 is real data
-        currency: "all"
+        currency: "all",
       },
       {
         id: "active-users-weekly",
@@ -1655,7 +1784,7 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         trend: "neutral",
         subtitle: "Unique users last 7 days",
         isDemoData: false,
-        currency: "all"
+        currency: "all",
       },
       {
         id: "active-users-monthly",
@@ -1665,7 +1794,7 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         trend: "neutral",
         subtitle: "Unique users last 30 days",
         isDemoData: false,
-        currency: "all"
+        currency: "all",
       },
       {
         id: "total-volume-gtv",
@@ -1673,9 +1802,9 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         value: formatCurrency(gtv, "USD"),
         change: "+0%",
         trend: "neutral",
-        subtitle: "Gross transaction volume",
+        subtitle: `Gross transaction volume • ${rangeLabel}`,
         isDemoData: false,
-        currency: "all"
+        currency: "all",
       },
       {
         id: "total-transaction-count-real",
@@ -1683,9 +1812,9 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         value: formatNumber(totalTransactions),
         change: "+0%",
         trend: "neutral",
-        subtitle: "Successful transactions",
+        subtitle: `Successful transactions • ${rangeLabel}`,
         isDemoData: false,
-        currency: "all"
+        currency: "all",
       },
       {
         id: "avg-transaction-value",
@@ -1693,9 +1822,9 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         value: formatCurrency(avgTransactionValue, "USD"),
         change: "+0%",
         trend: "neutral",
-        subtitle: "GTV / Total Transactions",
+        subtitle: `GTV / Total Transactions • ${rangeLabel}`,
         isDemoData: false,
-        currency: "all"
+        currency: "all",
       },
       {
         id: "avg-transactions-per-customer",
@@ -1703,10 +1832,10 @@ export async function fetchAnalyticsData(): Promise<AnalyticsResponse | ApiError
         value: avgTransactionsPerCustomer.toFixed(1),
         change: "+0%",
         trend: "neutral",
-        subtitle: "Transactions / Total Customers",
+        subtitle: `Transactions / Total Customers • ${rangeLabel}`,
         isDemoData: false,
-        currency: "all"
-      }
+        currency: "all",
+      },
     ];
 
     // Combine all metric cards
